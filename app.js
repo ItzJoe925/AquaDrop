@@ -10,6 +10,7 @@ let scanTimer     = null;
 const state = {
   sensors:[], alerts:[], totalScans:0, leaksFound:0,
   pressureData:[], is3D:true, view:'basement', startTime:Date.now(),
+  insuranceEvents:[],
 };
 
 // ═══════════════════════════════════════════════════════════════

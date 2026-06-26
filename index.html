@@ -28,6 +28,7 @@
       <span class="badge" id="alertBadge">0</span>
     </a>
     <a class="nav-item" onclick="showPage('reports')">📋 Reports</a>
+    <a class="nav-item" onclick="showPage('insurance')">🛡️ Insurance Portal</a>
     <a class="nav-item" onclick="showPage('health')">❤️ System Health</a>
     <a class="nav-item" onclick="showPage('settings')">⚙️ Settings</a>
   </nav>
@@ -274,6 +275,65 @@
       <h2>Report Center</h2>
       <p>Reports are generated automatically every 24 hours and can be shared directly with your plumber.</p>
       <button class="cta-btn" onclick="downloadReport()">📥 Download Session Report</button>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: INSURANCE ==================== -->
+  <div id="page-insurance" class="page">
+    <div class="page-title">🛡️ Insurance Portal</div>
+
+    <!-- Summary cards -->
+    <div class="insurance-summary-grid">
+      <div class="card insurance-summary-card">
+        <div class="ins-summary-icon">🔍</div>
+        <div class="ins-summary-num" id="insTotalLeaks">0</div>
+        <div class="ins-summary-label">Total Leaks Detected</div>
+      </div>
+      <div class="card insurance-summary-card">
+        <div class="ins-summary-icon">📅</div>
+        <div class="ins-summary-num" id="insSessionDays">—</div>
+        <div class="ins-summary-label">Monitoring Duration</div>
+      </div>
+      <div class="card insurance-summary-card">
+        <div class="ins-summary-icon">🔧</div>
+        <div class="ins-summary-num" id="insActiveIssues">0</div>
+        <div class="ins-summary-label">Active Leaks</div>
+      </div>
+      <div class="card insurance-summary-card">
+        <div class="ins-summary-icon">✅</div>
+        <div class="ins-summary-num" id="insResolved">0</div>
+        <div class="ins-summary-label">Resolved / Addressed</div>
+      </div>
+    </div>
+
+    <!-- Leak history table -->
+    <div class="card" style="margin-top:14px">
+      <div class="card-header">
+        <span class="card-title" style="font-size:13px; color:var(--text)">INSURANCE LEAK HISTORY REPORT</span>
+        <button class="cta-btn" onclick="downloadInsuranceReport()" style="padding:7px 16px; font-size:12px">📥 Download Insurance Report</button>
+      </div>
+      <p style="color:var(--text-dim); font-size:12px; margin-bottom:12px">
+        This report logs every leak detection event with timestamps, sensor location, pressure data, and AI confidence scores — 
+        suitable for submission to your insurance provider as proof of proactive monitoring and documented incidents.
+      </p>
+      <div class="insurance-table-wrap">
+        <table class="insurance-table">
+          <thead>
+            <tr>
+              <th>Date / Time</th>
+              <th>Sensor</th>
+              <th>Location</th>
+              <th>Pipe Section</th>
+              <th>Pressure (PSI)</th>
+              <th>Confidence</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="insuranceTableBody">
+            <tr><td colspan="7" style="color:var(--text-dim); text-align:center; padding:20px">No leak events recorded yet. The system is monitoring your pipes — data will populate here as events are detected.</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 

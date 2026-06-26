@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AquaDrop — AI Leak Detection System</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-icon">💧</div>
+    <div>
+      <div class="logo-title"><span class="blue">Aqua</span>Drop</div>
+      <div class="logo-sub">AI Leak Detection System</div>
+    </div>
+  </div>
+
+  <nav class="nav">
+    <a class="nav-item active" onclick="showPage('dashboard')">🏠 Dashboard</a>
+    <a class="nav-item" onclick="showPage('network')">🔧 Pipe Network</a>
+    <a class="nav-item" onclick="showPage('sensors')">📡 Sensors</a>
+    <a class="nav-item" onclick="showPage('analytics')">📊 Analytics</a>
+    <a class="nav-item" onclick="showPage('alerts')">
+      🔔 Alerts
+      <span class="badge" id="alertBadge">0</span>
+    </a>
+    <a class="nav-item" onclick="showPage('reports')">📋 Reports</a>
+    <a class="nav-item" onclick="showPage('health')">❤️ System Health</a>
+    <a class="nav-item" onclick="showPage('settings')">⚙️ Settings</a>
+  </nav>
+
+  <div class="sys-status">
+    <div class="sys-title">System Status</div>
+    <div class="sys-ok" id="sysStatusText">● All Systems Operational</div>
+    <div class="sys-grid">
+      <div>
+        <div class="sys-label">Sensors Online</div>
+        <div class="sys-val" id="sensorsOnline">24 / 24</div>
+      </div>
+      <div>
+        <div class="sys-label">Battery</div>
+        <div class="sys-val green" id="batteryLevel">98%</div>
+      </div>
+    </div>
+    <div class="sys-label">Last Scan</div>
+    <div class="sys-val" id="lastScan">—</div>
+  </div>
+
+  <div class="sidebar-footer">AquaDrop AI v2.1.4</div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <div class="topbar-addr">
+      <span class="topbar-x">✕</span>
+      1234 Innovation Drive, Smart Home
+      <span class="live-dot" id="liveDot"></span>
+      <span class="live-label" id="liveLabel">Live</span>
+    </div>
+    <div class="topbar-right">
+      <button class="icon-btn" onclick="showPage('alerts')">🔔<span class="badge" id="alertBadge2">0</span></button>
+      <button class="icon-btn" onclick="showPage('settings')">⚙️</button>
+      <div class="topbar-time" id="topbarTime">—</div>
+    </div>
+  </header>
+
+  <!-- ==================== PAGE: DASHBOARD ==================== -->
+  <div id="page-dashboard" class="page active">
+    <div class="dashboard-grid">
+
+      <!-- PIPE NETWORK SCHEMATIC -->
+      <section class="card pipe-card">
+        <div class="card-header">
+          <span class="card-title">PIPE NETWORK SCHEMATIC</span>
+          <div class="view-toggle">
+            <select id="viewSelect" onchange="setView(this.value)">
+              <option value="basement">Basement View</option>
+              <option value="main">Main Floor View</option>
+              <option value="full">Full House View</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="legend">
+          <span><span class="dot green"></span>Normal</span>
+          <span><span class="dot blue"></span>Monitoring</span>
+          <span><span class="dot yellow"></span>High Pressure</span>
+          <span><span class="dot red"></span>Leak Detected</span>
+          <span><span class="dot gray"></span>Offline</span>
+        </div>
+
+        <div class="pipe-canvas-wrap">
+          <canvas id="pipeCanvas"></canvas>
+          <!-- Leak tooltip -->
+          <div class="leak-tooltip" id="leakTooltip" style="display:none">
+            <div class="leak-tooltip-title">🔴 LEAK DETECTED</div>
+            <div id="tooltipContent"></div>
+          </div>
+        </div>
+
+        <div class="canvas-controls">
+          <button class="view-btn active" id="btn3d" onclick="toggle3D(true)">3D</button>
+          <button class="view-btn" id="btn2d" onclick="toggle3D(false)">2D</button>
+          <button class="view-btn" onclick="zoomCanvas(1.1)">＋</button>
+          <button class="view-btn" onclick="zoomCanvas(0.9)">－</button>
+          <button class="view-btn-right" onclick="alert('All 24 sensors shown on map above!')">Show All Sensors</button>
+        </div>
+      </section>
+
+      <!-- RIGHT PANEL -->
+      <aside class="right-panel">
+
+        <!-- LEAK PROBABILITY GAUGE -->
+        <div class="card gauge-card">
+          <div class="card-title">LEAK PROBABILITY</div>
+          <div class="gauge-wrap">
+            <canvas id="gaugeCanvas" width="220" height="130"></canvas>
+            <div class="gauge-center">
+              <div class="gauge-pct" id="gaugePct">0%</div>
+              <div class="gauge-label" id="gaugeLabel">Monitoring</div>
+            </div>
+          </div>
+          <div class="gauge-sub" id="gaugeNote">All sensors reading normal. System monitoring continuously.</div>
+        </div>
+
+        <!-- WATER PRESSURE CHART -->
+        <div class="card">
+          <div class="card-title">WATER PRESSURE (PSI)</div>
+          <div class="chart-label">Live Pressure Feed <span class="live-chip">● Live</span></div>
+          <canvas id="pressureChart" height="80"></canvas>
+        </div>
+
+        <!-- ACOUSTIC ANALYSIS -->
+        <div class="card">
+          <div class="card-title">ACOUSTIC ANALYSIS</div>
+          <div class="chart-label">Live Sound Waveform <span class="ai-chip" id="aiConfidence">AI Confidence: —</span></div>
+          <canvas id="waveCanvas" height="60"></canvas>
+          <div class="acoustic-status" id="acousticStatus">🟢 No leak signatures detected</div>
+        </div>
+
+        <!-- POSSIBLE LEAK LOCATION -->
+        <div class="card" id="leakLocationCard">
+          <div class="card-title">POSSIBLE LEAK LOCATION</div>
+          <div id="leakLocationBody">
+            <div class="no-leak-msg">✅ No leaks detected currently</div>
+          </div>
+        </div>
+
+      </aside>
+
+      <!-- SENSOR STATUS OVERVIEW -->
+      <section class="card sensor-overview">
+        <div class="card-title">SENSOR STATUS OVERVIEW</div>
+        <div class="sensor-grid">
+          <div class="sensor-stat">
+            <div class="sensor-num" id="statTotal">24</div>
+            <div class="sensor-name">Total Sensors</div>
+            <div class="sensor-sub green">All Online</div>
+          </div>
+          <div class="sensor-stat">
+            <div class="sensor-num yellow" id="statHighP">0</div>
+            <div class="sensor-name">High Pressure</div>
+            <div class="sensor-sub yellow" id="statHighPSub">Normal</div>
+          </div>
+          <div class="sensor-stat">
+            <div class="sensor-num red" id="statLeak">0</div>
+            <div class="sensor-name">Possible Leak</div>
+            <div class="sensor-sub" id="statLeakSub">—</div>
+          </div>
+          <div class="sensor-stat">
+            <div class="sensor-num green" id="statNormal">24</div>
+            <div class="sensor-name">Normal</div>
+            <div class="sensor-sub green">Stable</div>
+          </div>
+          <div class="sensor-stat">
+            <div class="sensor-num" id="statOffline">0</div>
+            <div class="sensor-name">Offline</div>
+            <div class="sensor-sub">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RECENT ALERTS -->
+      <section class="card alerts-card">
+        <div class="card-header">
+          <span class="card-title">RECENT ALERTS</span>
+          <button class="link-btn" onclick="showPage('alerts')">View All Alerts</button>
+        </div>
+        <div id="recentAlertsList" class="alerts-list">
+          <div class="alert-empty">No alerts yet. System monitoring…</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: SENSORS ==================== -->
+  <div id="page-sensors" class="page">
+    <div class="page-title">📡 Sensor Status</div>
+    <div class="sensor-table-wrap card">
+      <table class="sensor-table">
+        <thead>
+          <tr>
+            <th>Sensor ID</th><th>Location</th><th>Status</th><th>PSI</th><th>Noise Level</th><th>Last Ping</th>
+          </tr>
+        </thead>
+        <tbody id="sensorTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: ALERTS ==================== -->
+  <div id="page-alerts" class="page">
+    <div class="page-title">🔔 Alert History</div>
+    <div class="card">
+      <div id="fullAlertsList" class="alerts-list-full">
+        <div class="alert-empty">No alerts yet. System monitoring…</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: NETWORK ==================== -->
+  <div id="page-network" class="page">
+    <div class="page-title">🔧 Pipe Network</div>
+    <div class="card info-page">
+      <h2>How AquaDrop Works</h2>
+      <p>AquaDrop places <strong>24 acoustic micro-sensors</strong> along key junctions in your home's water pipe network. Each sensor continuously listens for the characteristic <em>high-frequency noise signature</em> that escaping pressurized water produces — a sound pattern no normal pipe flow creates.</p>
+      <div class="info-steps">
+        <div class="info-step">
+          <div class="step-num">01</div>
+          <div><strong>Sense</strong><br>Sensors detect acoustic anomalies in pipe vibration every 10 seconds.</div>
+        </div>
+        <div class="info-step">
+          <div class="step-num">02</div>
+          <div><strong>Analyze</strong><br>AI compares the sound pattern against thousands of known leak signatures, computing a probability score.</div>
+        </div>
+        <div class="info-step">
+          <div class="step-num">03</div>
+          <div><strong>Locate</strong><br>Time-difference-of-arrival (TDOA) math triangulates exactly which pipe section is leaking — down to 3 meters.</div>
+        </div>
+        <div class="info-step">
+          <div class="step-num">04</div>
+          <div><strong>Alert</strong><br>You and your plumber receive an alert with the precise location, saving wall openings and water.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: ANALYTICS ==================== -->
+  <div id="page-analytics" class="page">
+    <div class="page-title">📊 Analytics</div>
+    <div class="card info-page">
+      <h2>Session Statistics</h2>
+      <div class="analytics-grid" id="analyticsGrid">
+        <div class="analytics-stat"><div class="a-num" id="aTotalScans">0</div><div class="a-label">Total Scans</div></div>
+        <div class="analytics-stat"><div class="a-num" id="aLeaksFound">0</div><div class="a-label">Leaks Detected</div></div>
+        <div class="analytics-stat"><div class="a-num" id="aFalseAlarms">0</div><div class="a-label">False Alarms</div></div>
+        <div class="analytics-stat"><div class="a-num" id="aAvgPSI">—</div><div class="a-label">Avg PSI</div></div>
+      </div>
+      <canvas id="analyticsChart" height="100" style="margin-top:24px"></canvas>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: REPORTS ==================== -->
+  <div id="page-reports" class="page">
+    <div class="page-title">📋 Reports</div>
+    <div class="card info-page">
+      <h2>Report Center</h2>
+      <p>Reports are generated automatically every 24 hours and can be shared directly with your plumber.</p>
+      <button class="cta-btn" onclick="downloadReport()">📥 Download Session Report</button>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: HEALTH ==================== -->
+  <div id="page-health" class="page">
+    <div class="page-title">❤️ System Health</div>
+    <div class="card info-page">
+      <h2>All Systems Operational</h2>
+      <div class="health-items" id="healthItems"></div>
+    </div>
+  </div>
+
+  <!-- ==================== PAGE: SETTINGS ==================== -->
+  <div id="page-settings" class="page">
+    <div class="page-title">⚙️ Settings</div>
+    <div class="card info-page">
+      <h2>Simulation Settings</h2>
+      <label class="setting-row">
+        Scan Interval (seconds)
+        <input type="range" min="3" max="20" value="10" id="scanInterval" oninput="updateScanInterval(this.value)" />
+        <span id="scanIntervalVal">10s</span>
+      </label>
+      <label class="setting-row">
+        Leak Chance (1 in N per sensor per scan)
+        <input type="range" min="5" max="50" value="25" id="leakChance" oninput="updateLeakChance(this.value)" />
+        <span id="leakChanceVal">1 in 25</span>
+      </label>
+      <label class="setting-row">
+        Alert Sound
+        <input type="checkbox" id="alertSound" checked />
+      </label>
+      <label class="setting-row">
+        Dark Mode
+        <input type="checkbox" id="darkMode" checked onchange="toggleTheme()" />
+      </label>
+    </div>
+  </div>
+
+</main>
+
+<!-- LEAK ALERT MODAL -->
+<div class="modal-overlay" id="leakModal" style="display:none">
+  <div class="modal">
+    <div class="modal-icon">🚨</div>
+    <div class="modal-title">LEAK DETECTED</div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-actions">
+      <button class="modal-btn primary" onclick="dismissModal()">Acknowledge</button>
+      <button class="modal-btn" onclick="dismissModal()">Dismiss</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

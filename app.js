@@ -23,47 +23,43 @@ const state = {
 // Sensor definitions: position is (nx, ny) in normalised canvas coords
 // Types: 'pressure' (blue), 'acoustic' (green), 'flow' (yellow)
 const SENSOR_DEFS = [
-  // ── WATER MAIN ENTRY (far left, mid-depth) ──
-  { id:'S01', label:'A-1', pipe:'Water Main In',    loc:'West Foundation Entry', nx:0.07, ny:0.72, type:'pressure',  featured:false },
-  // ── MAIN HORIZONTAL RUN (upper level) ──
-  { id:'S02', label:'A-2', pipe:'Main Supply Line', loc:'Upper Main West',       nx:0.17, ny:0.63, type:'pressure',  featured:false },
-  { id:'S03', label:'A-3', pipe:'Main Supply Line', loc:'Bathroom West Riser',   nx:0.26, ny:0.63, type:'acoustic',  featured:false },
-  { id:'S04', label:'A-4', pipe:'Main Supply Line', loc:'Kitchen Feed Junction', nx:0.38, ny:0.63, type:'flow',      featured:false },
-  { id:'S05', label:'A-5', pipe:'Main Supply Line', loc:'Laundry Branch Point',  nx:0.50, ny:0.63, type:'acoustic',  featured:false },
-  { id:'S06', label:'B-3', pipe:'Section B-3',      loc:'Near Utility Room',     nx:0.60, ny:0.63, type:'acoustic',  featured:true  },
-  { id:'S07', label:'A-7', pipe:'Main Supply Line', loc:'Bathroom East Riser',   nx:0.71, ny:0.63, type:'flow',      featured:false },
-  { id:'S08', label:'A-8', pipe:'Main Supply Out',  loc:'East Foundation Exit',  nx:0.86, ny:0.63, type:'pressure',  featured:false },
-  // ── WATER MAIN EXIT (far right) ──
-  { id:'S09', label:'K-1', pipe:'Water Main Out',   loc:'East Foundation Exit',  nx:0.95, ny:0.72, type:'pressure',  featured:false },
+  // ── MUNICIPAL WATER ENTRY (far left, sub-floor) ──
+  { id:'S01', label:'A-1', pipe:'Municipal Supply In',   loc:'West Utility Entry Point',       nx:0.07, ny:0.72, type:'pressure',  featured:false },
+  // ── PRIMARY COOLING SUPPLY HEADER (upper run) ──
+  { id:'S02', label:'A-2', pipe:'Primary Cooling Header',loc:'Header West Section',            nx:0.17, ny:0.63, type:'pressure',  featured:false },
+  { id:'S03', label:'A-3', pipe:'Primary Cooling Header',loc:'Row A Cooling Feed',             nx:0.26, ny:0.63, type:'acoustic',  featured:false },
+  { id:'S04', label:'A-4', pipe:'Primary Cooling Header',loc:'CRAC Unit 1 Supply',             nx:0.38, ny:0.63, type:'flow',      featured:false },
+  { id:'S05', label:'A-5', pipe:'Primary Cooling Header',loc:'CRAC Unit 2 Supply',             nx:0.50, ny:0.63, type:'acoustic',  featured:false },
+  { id:'S06', label:'B-3', pipe:'Section B-3',           loc:'Hot Aisle Containment Zone',    nx:0.60, ny:0.63, type:'acoustic',  featured:true  },
+  { id:'S07', label:'A-7', pipe:'Primary Cooling Header',loc:'Row D Cooling Feed',             nx:0.71, ny:0.63, type:'flow',      featured:false },
+  { id:'S08', label:'A-8', pipe:'Cooling Header Out',    loc:'Header East Section',            nx:0.86, ny:0.63, type:'pressure',  featured:false },
+  // ── DISCHARGE EXIT (far right) ──
+  { id:'S09', label:'K-1', pipe:'Discharge Main Out',    loc:'East Utility Exit Point',        nx:0.95, ny:0.72, type:'pressure',  featured:false },
 
-  // ── LOWER LOOP / RETURN LINE ──
-  { id:'S10', label:'B-1', pipe:'Lower Return W',   loc:'Lower West Run',        nx:0.17, ny:0.80, type:'pressure',  featured:false },
-  { id:'S11', label:'B-2', pipe:'Lower Return Mid', loc:'Irrigation Branch',     nx:0.38, ny:0.80, type:'flow',      featured:false },
-  { id:'S12', label:'B-4', pipe:'Lower Return E',   loc:'Lower East Run',        nx:0.60, ny:0.80, type:'acoustic',  featured:false },
-  { id:'S13', label:'B-5', pipe:'Lower Return Far', loc:'Lower East Return',     nx:0.80, ny:0.80, type:'pressure',  featured:false },
+  // ── CHILLED WATER RETURN LOOP (lower run) ──
+  { id:'S10', label:'B-1', pipe:'Chilled Return West',   loc:'Return Loop West',               nx:0.17, ny:0.80, type:'pressure',  featured:false },
+  { id:'S11', label:'B-2', pipe:'Chilled Return Mid',    loc:'UPS Room Branch',                nx:0.38, ny:0.80, type:'flow',      featured:false },
+  { id:'S12', label:'B-4', pipe:'Chilled Return East',   loc:'Return Loop East',               nx:0.60, ny:0.80, type:'acoustic',  featured:false },
+  { id:'S13', label:'B-5', pipe:'Chilled Return Far',    loc:'Return Loop Far East',           nx:0.80, ny:0.80, type:'pressure',  featured:false },
 
-  // ── IRRIGATION DROP ──
-  { id:'S14', label:'C-1', pipe:'Irrigation Feed',  loc:'Irrigation System',     nx:0.38, ny:0.88, type:'flow',      featured:false },
+  // ── FIRE SUPPRESSION TAP ──
+  { id:'S14', label:'C-1', pipe:'Fire Suppression Feed', loc:'FM200 Suppression System',       nx:0.38, ny:0.88, type:'flow',      featured:false },
 
-  // ── VERTICAL RISERS (go up through ground into rooms) ──
-  // Bathroom left riser (top at ground line ~0.55)
-  { id:'S15', label:'D-1', pipe:'Bath-W Riser Top', loc:'Bathroom Left Wall',    nx:0.26, ny:0.56, type:'acoustic',  featured:false },
-  // Kitchen riser
-  { id:'S16', label:'D-2', pipe:'Kitchen Riser Top',loc:'Kitchen Supply',        nx:0.44, ny:0.56, type:'acoustic',  featured:false },
-  // Laundry riser
-  { id:'S17', label:'D-3', pipe:'Laundry Riser Top',loc:'Laundry Room',          nx:0.54, ny:0.56, type:'flow',      featured:false },
-  // Bath right riser
-  { id:'S18', label:'D-4', pipe:'Bath-E Riser Top', loc:'Bathroom Right Wall',   nx:0.71, ny:0.56, type:'acoustic',  featured:false },
+  // ── VERTICAL RISERS (sub-floor up into server rooms) ──
+  { id:'S15', label:'D-1', pipe:'Row A Riser Top',       loc:'Server Row A Overhead',          nx:0.26, ny:0.56, type:'acoustic',  featured:false },
+  { id:'S16', label:'D-2', pipe:'CRAC-1 Riser Top',      loc:'CRAC Unit 1 Overhead',           nx:0.44, ny:0.56, type:'acoustic',  featured:false },
+  { id:'S17', label:'D-3', pipe:'CRAC-2 Riser Top',      loc:'CRAC Unit 2 Overhead',           nx:0.54, ny:0.56, type:'flow',      featured:false },
+  { id:'S18', label:'D-4', pipe:'Row D Riser Top',       loc:'Server Row D Overhead',          nx:0.71, ny:0.56, type:'acoustic',  featured:false },
 
-  // ── GARAGE BRANCH (right side) ──
-  { id:'S19', label:'E-1', pipe:'Garage Branch',    loc:'Garage Water Supply',   nx:0.86, ny:0.78, type:'flow',      featured:false },
-  { id:'S20', label:'E-2', pipe:'Garage Low',       loc:'Garage Floor Drain',    nx:0.86, ny:0.85, type:'acoustic',  featured:false },
+  // ── GENERATOR COOLANT BRANCH (right side) ──
+  { id:'S19', label:'E-1', pipe:'Generator Coolant Feed', loc:'Backup Generator Room',         nx:0.86, ny:0.78, type:'flow',      featured:false },
+  { id:'S20', label:'E-2', pipe:'Generator Coolant Low',  loc:'Generator Floor Drain',         nx:0.86, ny:0.85, type:'acoustic',  featured:false },
 
   // ── MID-SECTION T-JUNCTIONS ──
-  { id:'S21', label:'C-2', pipe:'Section C-2',      loc:'Mid West Junction',     nx:0.17, ny:0.72, type:'flow',      featured:false },
-  { id:'S22', label:'C-3', pipe:'Section C-3',      loc:'Mid Center Junction',   nx:0.60, ny:0.72, type:'pressure',  featured:false },
-  { id:'S23', label:'C-4', pipe:'Section C-4',      loc:'East Mid Junction',     nx:0.80, ny:0.72, type:'acoustic',  featured:false },
-  { id:'S24', label:'C-5', pipe:'Section C-5',      loc:'Far East Junction',     nx:0.93, ny:0.80, type:'flow',      featured:false },
+  { id:'S21', label:'C-2', pipe:'Section C-2',            loc:'West Distribution Junction',    nx:0.17, ny:0.72, type:'flow',      featured:false },
+  { id:'S22', label:'C-3', pipe:'Section C-3',            loc:'Central Distribution Junction', nx:0.60, ny:0.72, type:'pressure',  featured:false },
+  { id:'S23', label:'C-4', pipe:'Section C-4',            loc:'East Distribution Junction',    nx:0.80, ny:0.72, type:'acoustic',  featured:false },
+  { id:'S24', label:'C-5', pipe:'Section C-5',            loc:'Far East Distribution Junction',nx:0.93, ny:0.80, type:'flow',      featured:false },
 ];
 
 // ── Pipe segment connections (pairs of sensor indices) ──────
@@ -187,307 +183,567 @@ function initDirtParticles(W, H) {
   }
 }
 
-// ─── SKY / HOUSE BACKGROUND ──────────────────────────────────
+// ─── BACKGROUND: EXTERIOR DATA CENTER + UNDERGROUND ──────────
 function drawBackground(ctx, W, H) {
   const GY = GROUND_Y * H;
+  drawSky(ctx, W, GY);
+  drawDataCenterExterior(ctx, W, GY);
+  drawGroundSurface(ctx, W, H, GY);
+  drawUnderground(ctx, W, H, GY);
+}
 
-  // Night sky gradient
-  const sky = ctx.createLinearGradient(0,0,0,GY);
-  sky.addColorStop(0,   '#0a0f1e');
-  sky.addColorStop(0.4, '#0d1528');
-  sky.addColorStop(0.8, '#121c35');
-  sky.addColorStop(1,   '#1a2840');
-  ctx.fillStyle = sky;
-  ctx.fillRect(0, 0, W, GY);
+// ── Sky with dusk gradient ────────────────────────────────────
+function drawSky(ctx, W, GY) {
+  const sky = ctx.createLinearGradient(0, 0, 0, GY);
+  sky.addColorStop(0,   '#06090f');
+  sky.addColorStop(0.35,'#0a1020');
+  sky.addColorStop(0.75,'#0d1830');
+  sky.addColorStop(1,   '#152540');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, GY);
 
   // Stars
-  ctx.fillStyle = 'rgba(255,255,255,0.6)';
-  for (let i=0; i<60; i++) {
-    const sx=((i*137.5)%W), sy=((i*71.3)%(GY*0.75));
-    const sr=0.5+Math.random()*1.0;
-    ctx.beginPath(); ctx.arc(sx,sy,sr,0,Math.PI*2); ctx.fill();
+  for (let i = 0; i < 80; i++) {
+    const sx = ((i * 173.3) % W);
+    const sy = ((i * 59.7) % (GY * 0.6));
+    const sr = 0.4 + (i % 3) * 0.4;
+    const sa = 0.3 + (i % 5) * 0.14;
+    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2);
+    ctx.fillStyle = `rgba(200,220,255,${sa})`; ctx.fill();
   }
-
-  // Clouds (subtle)
-  ctx.fillStyle = 'rgba(30,50,80,0.35)';
-  [[W*0.15,GY*0.25,120,28],[W*0.55,GY*0.18,160,32],[W*0.80,GY*0.32,100,22]].forEach(([cx,cy,rw,rh])=>{
-    ctx.beginPath(); ctx.ellipse(cx,cy,rw,rh,0,0,Math.PI*2); ctx.fill();
-  });
-
-  // Trees (silhouettes left and right)
-  drawTree(ctx, W*0.04, GY, W*0.03, GY*0.35);
-  drawTree(ctx, W*0.96, GY, W*0.03, GY*0.35);
-
-  // House silhouette
-  drawHouse(ctx, W, GY);
-
-  // Ground surface line (grass)
-  const grassGrd = ctx.createLinearGradient(0, GY-6, 0, GY+12);
-  grassGrd.addColorStop(0, '#2d5a1b');
-  grassGrd.addColorStop(0.4,'#1e3d12');
-  grassGrd.addColorStop(1, 'transparent');
-  ctx.fillStyle = grassGrd;
-  ctx.fillRect(0, GY-6, W, 20);
-
-  // Dirt / soil below ground
-  drawSoil(ctx, W, H, GY);
+  // Moon
+  ctx.save();
+  const moonX = W * 0.88, moonY = GY * 0.18, moonR = W * 0.022;
+  const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonR * 4);
+  moonGlow.addColorStop(0, 'rgba(200,220,255,0.12)');
+  moonGlow.addColorStop(1, 'transparent');
+  ctx.beginPath(); ctx.arc(moonX, moonY, moonR * 4, 0, Math.PI*2);
+  ctx.fillStyle = moonGlow; ctx.fill();
+  const mg = ctx.createRadialGradient(moonX - moonR*0.3, moonY - moonR*0.3, moonR*0.1, moonX, moonY, moonR);
+  mg.addColorStop(0, '#e8eeff'); mg.addColorStop(0.6, '#c0ccee'); mg.addColorStop(1, '#8090b0');
+  ctx.beginPath(); ctx.arc(moonX, moonY, moonR, 0, Math.PI*2);
+  ctx.fillStyle = mg; ctx.fill();
+  ctx.restore();
 }
 
-function drawTree(ctx, x, baseY, w, h) {
-  // Trunk
-  ctx.fillStyle = '#1a0f05';
-  ctx.fillRect(x - w*0.08, baseY - h*0.3, w*0.16, h*0.3);
-  // Canopy layers
-  for (let l=0; l<3; l++) {
-    const ly = baseY - h*0.25 - l*h*0.27;
-    const lw = w*(1.0-l*0.22);
-    const lh = h*0.33;
-    ctx.fillStyle = l===0?'#0e2b08':'#0a2006';
-    ctx.beginPath();
-    ctx.moveTo(x, ly-lh);
-    ctx.lineTo(x+lw, ly);
-    ctx.lineTo(x-lw, ly);
-    ctx.closePath(); ctx.fill();
+// ── Massive data center exterior ─────────────────────────────
+function drawDataCenterExterior(ctx, W, GY) {
+  const bL = W * 0.02, bR = W * 0.98, bW = bR - bL;
+  const bTop = GY * 0.03, bH = GY - bTop;
+
+  // ── Foundation / base plinth ──
+  const plinthH = bH * 0.05;
+  const plinthGrd = ctx.createLinearGradient(0, GY - plinthH, 0, GY);
+  plinthGrd.addColorStop(0, '#1a2530'); plinthGrd.addColorStop(1, '#0d161e');
+  ctx.fillStyle = plinthGrd;
+  ctx.fillRect(bL - W*0.005, GY - plinthH, bW + W*0.01, plinthH);
+
+  // ── Main wall — precast concrete panels ──
+  const wallGrd = ctx.createLinearGradient(bL, bTop, bL, GY);
+  wallGrd.addColorStop(0, '#2a3540');
+  wallGrd.addColorStop(0.4, '#222d38');
+  wallGrd.addColorStop(1, '#1a2530');
+  ctx.fillStyle = wallGrd;
+  ctx.fillRect(bL, bTop, bW, bH - plinthH);
+
+  // Concrete panel grid — vertical seams
+  ctx.strokeStyle = 'rgba(10,20,30,0.7)'; ctx.lineWidth = 1.5;
+  const panelW = bW / 12;
+  for (let p = 1; p < 12; p++) {
+    const px = bL + p * panelW;
+    ctx.beginPath(); ctx.moveTo(px, bTop); ctx.lineTo(px, GY - plinthH); ctx.stroke();
   }
-}
+  // Horizontal seams (3 courses)
+  for (let r = 1; r <= 3; r++) {
+    const ry = bTop + bH * (r * 0.24);
+    ctx.beginPath(); ctx.moveTo(bL, ry); ctx.lineTo(bR, ry); ctx.stroke();
+  }
 
-function drawHouse(ctx, W, GY) {
-  const hL = W*0.15, hR = W*0.88;
-  const hW  = hR - hL;
-  const hBase = GY;
-  const hH  = GY * 0.72;
-  const hTop = hBase - hH;
+  // Subtle wall surface texture — slight lighter highlight on each panel
+  for (let p = 0; p < 12; p++) {
+    const px = bL + p * panelW;
+    const panelGrd = ctx.createLinearGradient(px + 2, bTop, px + panelW - 2, bTop);
+    panelGrd.addColorStop(0, 'rgba(255,255,255,0.025)');
+    panelGrd.addColorStop(0.5, 'rgba(255,255,255,0.055)');
+    panelGrd.addColorStop(1, 'rgba(255,255,255,0.015)');
+    ctx.fillStyle = panelGrd;
+    ctx.fillRect(px + 1, bTop + 1, panelW - 2, bH - plinthH - 2);
+  }
 
-  // House body
-  const bodyGrd = ctx.createLinearGradient(hL, hTop, hR, hBase);
-  bodyGrd.addColorStop(0, '#c8bfb0');
-  bodyGrd.addColorStop(1, '#a89f92');
-  ctx.fillStyle = bodyGrd;
-  ctx.fillRect(hL, hTop+hH*0.18, hW, hH*0.82);
+  // ── Parapet / roof edge ──
+  const parapetH = bH * 0.05;
+  const parapetGrd = ctx.createLinearGradient(0, bTop, 0, bTop + parapetH);
+  parapetGrd.addColorStop(0, '#1a222c'); parapetGrd.addColorStop(1, '#12191f');
+  ctx.fillStyle = parapetGrd;
+  ctx.fillRect(bL - 4, bTop, bW + 8, parapetH);
+  // Parapet top highlight
+  ctx.strokeStyle = 'rgba(80,120,160,0.4)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(bL-4, bTop); ctx.lineTo(bR+4, bTop); ctx.stroke();
+  // Parapet bottom shadow
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(bL-4, bTop+parapetH); ctx.lineTo(bR+4, bTop+parapetH); ctx.stroke();
 
-  // Second floor (slightly different shade)
-  const sfGrd = ctx.createLinearGradient(hL, hTop, hR, hTop+hH*0.5);
-  sfGrd.addColorStop(0,'#d0c8bc'); sfGrd.addColorStop(1,'#b8b0a5');
-  ctx.fillStyle = sfGrd;
-  ctx.fillRect(hL+hW*0.05, hTop+hH*0.18, hW*0.90, hH*0.42);
-
-  // Roof main
-  ctx.fillStyle = '#1a1a1a';
-  ctx.beginPath();
-  ctx.moveTo(hL-hW*0.04, hTop+hH*0.22);
-  ctx.lineTo(W*0.5, hTop-hH*0.04);
-  ctx.lineTo(hR+hW*0.04, hTop+hH*0.22);
-  ctx.closePath(); ctx.fill();
-
-  // Roof ridge detail
-  ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=2;
-  ctx.beginPath();
-  ctx.moveTo(hL-hW*0.04, hTop+hH*0.22);
-  ctx.lineTo(W*0.5, hTop-hH*0.04);
-  ctx.lineTo(hR+hW*0.04, hTop+hH*0.22);
-  ctx.stroke();
-
-  // Roof overhang shadow
-  const roofShadow = ctx.createLinearGradient(0, hTop+hH*0.18, 0, hTop+hH*0.30);
-  roofShadow.addColorStop(0,'rgba(0,0,0,0.6)'); roofShadow.addColorStop(1,'transparent');
-  ctx.fillStyle = roofShadow;
-  ctx.fillRect(hL, hTop+hH*0.18, hW, hH*0.14);
-
-  // Wall trim / divider between floors
-  ctx.strokeStyle='#888'; ctx.lineWidth=2;
-  ctx.beginPath(); ctx.moveTo(hL, hTop+hH*0.60); ctx.lineTo(hR, hTop+hH*0.60); ctx.stroke();
-
-  // Windows (warm lit glow)
-  const wins = [
-    // 2nd floor
-    {x:hL+hW*0.10, y:hTop+hH*0.26, w:hW*0.10, h:hH*0.20},
-    {x:hL+hW*0.24, y:hTop+hH*0.26, w:hW*0.10, h:hH*0.20},
-    {x:hL+hW*0.44, y:hTop+hH*0.24, w:hW*0.12, h:hH*0.22},
-    {x:hL+hW*0.60, y:hTop+hH*0.26, w:hW*0.10, h:hH*0.20},
-    {x:hL+hW*0.74, y:hTop+hH*0.26, w:hW*0.10, h:hH*0.20},
-    // 1st floor
-    {x:hL+hW*0.05, y:hTop+hH*0.63, w:hW*0.14, h:hH*0.28, label:'BATHROOM'},
-    {x:hL+hW*0.27, y:hTop+hH*0.63, w:hW*0.14, h:hH*0.28, label:'KITCHEN'},
-    {x:hL+hW*0.44, y:hTop+hH*0.63, w:hW*0.11, h:hH*0.28, label:'LAUNDRY'},
-    {x:hL+hW*0.60, y:hTop+hH*0.63, w:hW*0.14, h:hH*0.28, label:'BATHROOM'},
-    {x:hL+hW*0.78, y:hTop+hH*0.63, w:hW*0.10, h:hH*0.28, label:'GARAGE', garage:true},
+  // ── Rooftop HVAC chillers (large rectangular units) ──
+  const roofTop = bTop - GY * 0.0;
+  const chillerDefs = [
+    { fx: 0.08, fw: 0.13 }, { fx: 0.25, fw: 0.16 }, { fx: 0.46, fw: 0.11 },
+    { fx: 0.62, fw: 0.16 }, { fx: 0.83, fw: 0.12 },
   ];
-
-  wins.forEach(win=>{
-    if(win.garage) {
-      // Garage door
-      const grd = ctx.createLinearGradient(win.x, win.y, win.x, win.y+win.h);
-      grd.addColorStop(0,'#6b5a48'); grd.addColorStop(1,'#4a3d30');
-      ctx.fillStyle=grd; ctx.fillRect(win.x,win.y,win.w,win.h);
-      // Garage panels
-      ctx.strokeStyle='#3a2e22'; ctx.lineWidth=1.2;
-      for(let p=0;p<3;p++){
-        ctx.beginPath(); ctx.moveTo(win.x,win.y+win.h*((p+1)/4)); ctx.lineTo(win.x+win.w,win.y+win.h*((p+1)/4)); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(win.x+win.w/2,win.y); ctx.lineTo(win.x+win.w/2,win.y+win.h); ctx.stroke();
-      }
-    } else {
-      // Warm interior glow
-      const winGrd = ctx.createRadialGradient(win.x+win.w/2, win.y+win.h*0.4, 0, win.x+win.w/2, win.y+win.h/2, win.w*0.8);
-      winGrd.addColorStop(0,'rgba(255,220,130,0.95)');
-      winGrd.addColorStop(0.5,'rgba(255,190,80,0.80)');
-      winGrd.addColorStop(1,'rgba(200,130,40,0.60)');
-      ctx.fillStyle = winGrd;
-      ctx.fillRect(win.x, win.y, win.w, win.h);
-
-      // Interior scene hints
-      if(win.label==='KITCHEN'){
-        ctx.fillStyle='rgba(180,100,40,0.6)';
-        ctx.fillRect(win.x+win.w*0.1,win.y+win.h*0.55,win.w*0.8,win.h*0.1);
-      }
-
-      // Window frame
-      ctx.strokeStyle='#2a2a2a'; ctx.lineWidth=2;
-      ctx.strokeRect(win.x,win.y,win.w,win.h);
-      // Mullion
-      ctx.beginPath(); ctx.moveTo(win.x+win.w/2,win.y); ctx.lineTo(win.x+win.w/2,win.y+win.h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(win.x,win.y+win.h/2); ctx.lineTo(win.x+win.w,win.y+win.h/2); ctx.stroke();
-
-      // Exterior light spill on ground
-      const spill = ctx.createLinearGradient(win.x,win.y+win.h,win.x,GY);
-      spill.addColorStop(0,'rgba(255,200,80,0.12)'); spill.addColorStop(1,'transparent');
-      ctx.fillStyle=spill;
-      ctx.fillRect(win.x,win.y+win.h,win.w,GY-(win.y+win.h));
+  chillerDefs.forEach(({ fx, fw }) => {
+    const cx = bL + bW * fx, cw = bW * fw, ch = GY * 0.07;
+    const cy = bTop - ch + parapetH * 0.6;
+    // Chiller body
+    const cg = ctx.createLinearGradient(cx, cy, cx, cy + ch);
+    cg.addColorStop(0, '#1e2e3c'); cg.addColorStop(1, '#131e28');
+    ctx.fillStyle = cg; ctx.fillRect(cx, cy, cw, ch);
+    ctx.strokeStyle = '#0a1520'; ctx.lineWidth = 1.5;
+    ctx.strokeRect(cx, cy, cw, ch);
+    // Louvre / vent slats
+    ctx.strokeStyle = 'rgba(30,60,90,0.8)'; ctx.lineWidth = 1;
+    const slats = 6;
+    for (let s = 1; s <= slats; s++) {
+      const sy = cy + ch * (s / (slats + 1));
+      ctx.beginPath(); ctx.moveTo(cx + cw*0.05, sy); ctx.lineTo(cx + cw*0.95, sy); ctx.stroke();
     }
+    // Status light
+    ctx.beginPath(); ctx.arc(cx + cw*0.9, cy + ch*0.15, 3, 0, Math.PI*2);
+    ctx.fillStyle = '#22c55e'; ctx.fill();
+    const lg = ctx.createRadialGradient(cx + cw*0.9, cy + ch*0.15, 0, cx + cw*0.9, cy + ch*0.15, 8);
+    lg.addColorStop(0, 'rgba(34,197,94,0.4)'); lg.addColorStop(1, 'transparent');
+    ctx.beginPath(); ctx.arc(cx + cw*0.9, cy + ch*0.15, 8, 0, Math.PI*2);
+    ctx.fillStyle = lg; ctx.fill();
+  });
 
-    // Room labels
-    if(win.label) {
-      ctx.save();
-      ctx.font=`bold ${Math.max(8,W*0.009)}px Segoe UI`;
-      ctx.fillStyle='rgba(255,255,255,0.75)';
-      ctx.textAlign='center';
-      ctx.shadowColor='rgba(0,0,0,0.8)'; ctx.shadowBlur=4;
-      ctx.fillText(win.label, win.x+win.w/2, win.y-5);
-      ctx.restore();
+  // ── Cooling towers / CTUs at top ──
+  const towerDefs = [{ fx: 0.37 }, { fx: 0.56 }];
+  towerDefs.forEach(({ fx }) => {
+    const tx = bL + bW * fx, tw = bW * 0.06, th = GY * 0.11;
+    const ty = bTop - th + parapetH * 0.5;
+    const tg = ctx.createLinearGradient(tx, ty, tx, ty + th);
+    tg.addColorStop(0, '#1a2838'); tg.addColorStop(0.5, '#152030'); tg.addColorStop(1, '#0e1820');
+    ctx.fillStyle = tg; ctx.fillRect(tx - tw/2, ty, tw, th);
+    ctx.strokeStyle = '#0a1520'; ctx.lineWidth = 1;
+    ctx.strokeRect(tx - tw/2, ty, tw, th);
+    // Circular fan grille on top
+    ctx.beginPath(); ctx.ellipse(tx, ty + th * 0.25, tw*0.38, tw*0.38, 0, 0, Math.PI*2);
+    ctx.strokeStyle = '#0e2030'; ctx.lineWidth = 1.5; ctx.stroke();
+    // Animated rotation hint
+    const angle = (Date.now() / 1200) % (Math.PI * 2);
+    ctx.save();
+    ctx.translate(tx, ty + th*0.25);
+    ctx.rotate(angle);
+    for (let b = 0; b < 4; b++) {
+      ctx.rotate(Math.PI / 2);
+      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, tw*0.33);
+      ctx.strokeStyle = 'rgba(40,80,120,0.7)'; ctx.lineWidth = tw*0.07; ctx.stroke();
+    }
+    ctx.restore();
+    // Steam plume
+    const t2 = Date.now() / 1000;
+    for (let pl = 0; pl < 4; pl++) {
+      const py = ty - pl * th * 0.18 - ((t2 * 0.5 + pl * 0.25) % 1) * th * 0.5;
+      const pa = 0.06 - pl * 0.013;
+      const pr = tw * (0.25 + pl * 0.12);
+      if (pa > 0) {
+        ctx.beginPath(); ctx.ellipse(tx + Math.sin(t2 + pl)*3, py, pr, pr*0.5, 0, 0, Math.PI*2);
+        ctx.fillStyle = `rgba(180,200,220,${pa})`; ctx.fill();
+      }
     }
   });
 
-  // House outline
-  ctx.strokeStyle='rgba(0,0,0,0.4)'; ctx.lineWidth=1.5;
-  ctx.strokeRect(hL, hTop+hH*0.18, hW, hH*0.82);
-}
+  // ── Pipes on building exterior wall (supply & return visible outside) ──
+  drawExteriorWallPipes(ctx, W, GY, bL, bR, bH, bTop);
 
-function drawSoil(ctx, W, H, GY) {
-  // Base soil gradient
-  const soilGrd = ctx.createLinearGradient(0, GY, 0, H);
-  soilGrd.addColorStop(0,   '#2a1a0a');
-  soilGrd.addColorStop(0.15,'#221508');
-  soilGrd.addColorStop(0.45,'#1a1005');
-  soilGrd.addColorStop(0.8, '#120c03');
-  soilGrd.addColorStop(1,   '#0a0702');
-  ctx.fillStyle = soilGrd;
-  ctx.fillRect(0, GY, W, H-GY);
-
-  // Soil texture particles
-  dirtParticles.forEach(p=>{
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fillStyle=p.c;
-    ctx.globalAlpha=p.a; ctx.fill(); ctx.globalAlpha=1;
-  });
-
-  // Rock patches
-  [[W*0.1,GY+H*0.12,18,10],[W*0.35,GY+H*0.25,12,7],[W*0.65,GY+H*0.18,22,12],[W*0.82,GY+H*0.28,14,8]].forEach(([rx,ry,rw,rh])=>{
-    ctx.fillStyle='#2d2318'; ctx.globalAlpha=0.5;
-    ctx.beginPath(); ctx.ellipse(rx,ry,rw,rh,0.2,0,Math.PI*2); ctx.fill(); ctx.globalAlpha=1;
-  });
-
-  // Subtle horizontal soil strata lines
-  for(let s=0;s<5;s++){
-    const sy = GY + (H-GY)*(0.15+s*0.17);
-    ctx.beginPath(); ctx.moveTo(0,sy); ctx.lineTo(W,sy);
-    ctx.strokeStyle=`rgba(50,30,10,${0.08+s*0.02})`; ctx.lineWidth=1.5; ctx.stroke();
+  // ── Security fence ──
+  const fenceY = GY - plinthH * 0.3;
+  ctx.strokeStyle = 'rgba(40,70,100,0.6)'; ctx.lineWidth = 1;
+  // Left fence segment
+  ctx.beginPath(); ctx.moveTo(0, fenceY); ctx.lineTo(bL, fenceY); ctx.stroke();
+  // Right fence segment
+  ctx.beginPath(); ctx.moveTo(bR, fenceY); ctx.lineTo(W, fenceY); ctx.stroke();
+  // Fence posts
+  for (let fp = 0; fp < W; fp += W*0.04) {
+    if (fp < bL || fp > bR) {
+      ctx.beginPath(); ctx.moveTo(fp, fenceY); ctx.lineTo(fp, fenceY - GY*0.03);
+      ctx.strokeStyle = 'rgba(40,70,100,0.5)'; ctx.lineWidth = 2; ctx.stroke();
+    }
   }
 
-  // Depth shadow vignette
-  const vig = ctx.createLinearGradient(0,GY,0,H);
-  vig.addColorStop(0,'transparent'); vig.addColorStop(1,'rgba(0,0,0,0.6)');
-  ctx.fillStyle=vig; ctx.fillRect(0,GY,W,H-GY);
+  // ── Entrance / loading dock ──
+  const dockW = bW * 0.08, dockH = bH * 0.18;
+  const dockX = bL + bW * 0.46, dockY = GY - plinthH - dockH;
+  // Dock surround
+  ctx.fillStyle = '#0e1820';
+  ctx.fillRect(dockX - dockW*0.1, dockY - dockH*0.05, dockW*1.2, dockH*1.05 + plinthH);
+  // Steel door
+  const doorG = ctx.createLinearGradient(dockX, dockY, dockX + dockW, dockY);
+  doorG.addColorStop(0, '#1a2838'); doorG.addColorStop(0.5, '#1e3048'); doorG.addColorStop(1, '#1a2838');
+  ctx.fillStyle = doorG; ctx.fillRect(dockX, dockY, dockW, dockH);
+  // Door panel ribs
+  ctx.strokeStyle = '#0e1a28'; ctx.lineWidth = 1.2;
+  for (let rib = 1; rib < 5; rib++) {
+    const ry = dockY + dockH * (rib / 5);
+    ctx.beginPath(); ctx.moveTo(dockX, ry); ctx.lineTo(dockX + dockW, ry); ctx.stroke();
+  }
+  ctx.strokeStyle = '#0a1520'; ctx.lineWidth = 2;
+  ctx.strokeRect(dockX, dockY, dockW, dockH);
+  // Security light above door
+  ctx.beginPath(); ctx.arc(dockX + dockW*0.5, dockY - 6, 4, 0, Math.PI*2);
+  ctx.fillStyle = '#f59e0b'; ctx.fill();
+  const secGlow = ctx.createRadialGradient(dockX+dockW*0.5, dockY-6, 0, dockX+dockW*0.5, dockY-6, 30);
+  secGlow.addColorStop(0, 'rgba(245,158,11,0.25)'); secGlow.addColorStop(1, 'transparent');
+  ctx.beginPath(); ctx.arc(dockX+dockW*0.5, dockY-6, 30, 0, Math.PI*2);
+  ctx.fillStyle = secGlow; ctx.fill();
+  // "DATA CENTER" label on building
+  ctx.save();
+  ctx.font = `bold ${Math.max(13, W*0.018)}px Segoe UI, monospace`;
+  ctx.fillStyle = 'rgba(160,200,240,0.55)';
+  ctx.textAlign = 'center';
+  ctx.letterSpacing = '3px';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6;
+  ctx.fillText('DATA CENTER  DC-01', bL + bW*0.5, bTop + bH*0.38);
+  ctx.font = `${Math.max(9, W*0.010)}px Segoe UI`;
+  ctx.fillStyle = 'rgba(100,150,180,0.40)';
+  ctx.fillText('TIER III  ·  RESTRICTED ACCESS  ·  24/7 MONITORING', bL + bW*0.5, bTop + bH*0.46);
+  ctx.restore();
+
+  // Building outer shadow / edge
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 2.5;
+  ctx.strokeRect(bL, bTop, bW, bH - plinthH);
 }
 
-// ─── 3D PIPE DRAWING ─────────────────────────────────────────
+// ── Pipes visible on exterior wall (surface-mounted supply/return) ──
+function drawExteriorWallPipes(ctx, W, GY, bL, bR, bH, bTop) {
+  // Two large-diameter pipes run along the base of the building exterior
+  // before going underground — supply (cold, blue) and return (warm, orange)
+  const pipeY1 = GY - bH * 0.08; // chilled supply
+  const pipeY2 = GY - bH * 0.04; // warm return
+  const pR1 = W * 0.018; // supply pipe radius
+  const pR2 = W * 0.013; // return pipe radius
+
+  [[pipeY1, pR1, '#1a4a7a', '#3b9eff', false],
+   [pipeY2, pR2, '#5a2800', '#f59e0b', true]].forEach(([py, pr, dark, light, isWarm]) => {
+    // Pipe shadow
+    ctx.save(); ctx.filter = 'blur(4px)';
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(bL, py - pr + pr*0.5, bR - bL, pr * 2.2);
+    ctx.restore();
+
+    // Pipe body gradient (top-lit cylinder)
+    const pg = ctx.createLinearGradient(0, py - pr, 0, py + pr);
+    pg.addColorStop(0,   'rgba(255,255,255,0.25)');
+    pg.addColorStop(0.15, light);
+    pg.addColorStop(0.5,  dark);
+    pg.addColorStop(0.85, dark);
+    pg.addColorStop(1,   'rgba(0,0,0,0.6)');
+    ctx.fillStyle = pg;
+    ctx.fillRect(bL, py - pr, bR - bL, pr * 2);
+
+    // Specular highlight strip
+    const sg = ctx.createLinearGradient(0, py - pr, 0, py - pr*0.3);
+    sg.addColorStop(0, 'rgba(255,255,255,0.55)');
+    sg.addColorStop(1, 'rgba(255,255,255,0.0)');
+    ctx.fillStyle = sg;
+    ctx.fillRect(bL, py - pr, bR - bL, pr * 0.7);
+
+    // Pipe thermal insulation wrap seams (every ~80px)
+    ctx.strokeStyle = `rgba(0,0,0,0.35)`; ctx.lineWidth = 1.5;
+    for (let sx = bL; sx < bR; sx += W * 0.06) {
+      ctx.beginPath(); ctx.moveTo(sx, py - pr); ctx.lineTo(sx, py + pr); ctx.stroke();
+    }
+
+    // Label badge on pipe
+    const lx = bL + (bR - bL) * 0.12;
+    const label = isWarm ? 'RETURN  +12°C' : 'SUPPLY  +7°C';
+    const lColor = isWarm ? '#f59e0b' : '#3b9eff';
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,15,25,0.8)';
+    const tw = ctx.measureText(label).width + 16;
+    ctx.fillRect(lx - tw/2, py - 9, tw, 18);
+    ctx.strokeStyle = lColor; ctx.lineWidth = 1;
+    ctx.strokeRect(lx - tw/2, py - 9, tw, 18);
+    ctx.fillStyle = lColor;
+    ctx.font = `bold ${Math.max(8, W*0.009)}px Segoe UI, monospace`;
+    ctx.textAlign = 'center';
+    ctx.fillText(label, lx, py + 4);
+    ctx.restore();
+  });
+}
+
+// ── Ground surface (asphalt / concrete apron) ─────────────────
+function drawGroundSurface(ctx, W, H, GY) {
+  // Concrete apron
+  const gGrd = ctx.createLinearGradient(0, GY - 3, 0, GY + 10);
+  gGrd.addColorStop(0, '#1e2c3a');
+  gGrd.addColorStop(0.5, '#141f28');
+  gGrd.addColorStop(1, 'transparent');
+  ctx.fillStyle = gGrd;
+  ctx.fillRect(0, GY - 3, W, 14);
+
+  // Ground label dashed line
+  ctx.save();
+  ctx.setLineDash([8, 5]);
+  ctx.strokeStyle = 'rgba(60,100,140,0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(0, GY); ctx.lineTo(W, GY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+}
+
+// ── Underground — soil + bedrock cross-section ────────────────
+function drawUnderground(ctx, W, H, GY) {
+  // Main soil body
+  const sGrd = ctx.createLinearGradient(0, GY, 0, H);
+  sGrd.addColorStop(0,   '#1c1208');
+  sGrd.addColorStop(0.12,'#16100a');
+  sGrd.addColorStop(0.35,'#110e0a');
+  sGrd.addColorStop(0.65,'#0d0c0a');
+  sGrd.addColorStop(1,   '#08090a');
+  ctx.fillStyle = sGrd; ctx.fillRect(0, GY, W, H - GY);
+
+  // Soil strata bands
+  const strata = [
+    { y: 0.10, h: 0.06, c: 'rgba(28,18,8,0.7)' },   // topsoil
+    { y: 0.22, h: 0.04, c: 'rgba(35,25,12,0.5)' },   // clay seam
+    { y: 0.45, h: 0.08, c: 'rgba(14,12,10,0.6)' },   // hardpan
+    { y: 0.72, h: 0.10, c: 'rgba(10,9,9,0.8)' },     // bedrock
+  ];
+  strata.forEach(({ y, h, c }) => {
+    const sy = GY + (H - GY) * y;
+    const sh = (H - GY) * h;
+    ctx.fillStyle = c; ctx.fillRect(0, sy, W, sh);
+    // Stratum edge line
+    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(W, sy); ctx.stroke();
+  });
+
+  // Aggregate / gravel particles
+  dirtParticles.forEach(p => {
+    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+    ctx.fillStyle = p.r > 2.5 ? '#1a1208' : '#22180a';
+    ctx.globalAlpha = p.a * 0.55; ctx.fill(); ctx.globalAlpha = 1;
+  });
+
+  // Rock inclusions
+  const rocks = [
+    [W*0.08, GY+(H-GY)*0.18, 14, 9], [W*0.22, GY+(H-GY)*0.32, 10, 6],
+    [W*0.41, GY+(H-GY)*0.52, 18, 10],[W*0.58, GY+(H-GY)*0.24, 12, 7],
+    [W*0.73, GY+(H-GY)*0.41, 16, 9], [W*0.87, GY+(H-GY)*0.30, 11, 6],
+  ];
+  rocks.forEach(([rx, ry, rw, rh]) => {
+    const rg = ctx.createRadialGradient(rx - rw*0.2, ry - rh*0.2, 0, rx, ry, rw);
+    rg.addColorStop(0, '#2a2420'); rg.addColorStop(1, '#14100e');
+    ctx.beginPath(); ctx.ellipse(rx, ry, rw, rh, 0.3, 0, Math.PI*2);
+    ctx.fillStyle = rg; ctx.fill();
+  });
+
+  // Depth vignette
+  const vig = ctx.createLinearGradient(0, GY, 0, H);
+  vig.addColorStop(0, 'transparent'); vig.addColorStop(1, 'rgba(0,0,0,0.75)');
+  ctx.fillStyle = vig; ctx.fillRect(0, GY, W, H - GY);
+}
+
+
+
+
+
+
+
+// ─── REALISTIC INDUSTRIAL PIPE DRAWING ───────────────────────
 function drawPipeSegment(ctx, x1,y1, x2,y2, leaking, highP, W) {
   const dx=x2-x1, dy=y2-y1;
   const len=Math.hypot(dx,dy); if(len<1) return;
-  const nx=-dy/len, ny=dx/len;
-  const thick = W*0.015;   // pipe radius in px
+  const ux=dx/len, uy=dy/len;       // unit along pipe
+  const nx=-uy,   ny=ux;            // unit normal (perpendicular)
 
-  // ─ Outer light glow ─
-  const glowColor = leaking ? 'rgba(239,68,68,0.25)' : highP ? 'rgba(245,158,11,0.18)' : 'rgba(30,80,160,0.14)';
-  const glowW = thick * (leaking ? 2.8 : 1.8);
-  ctx.save(); ctx.filter=`blur(${leaking?6:3}px)`;
+  const thick = W * 0.018;          // pipe outer radius
+  const insR  = thick * 1.28;       // insulation wrap radius
+
+  // ── Outer ambient glow (leak = red, highP = amber, normal = blue) ──
+  const glowCol = leaking ? 'rgba(239,68,68,0.30)' : highP ? 'rgba(245,158,11,0.22)' : 'rgba(30,100,200,0.12)';
+  const glowR   = insR * (leaking ? 3.2 : 2.0);
+  ctx.save(); ctx.filter = `blur(${leaking ? 8 : 4}px)`;
   ctx.beginPath();
-  ctx.moveTo(x1+nx*glowW,y1+ny*glowW); ctx.lineTo(x2+nx*glowW,y2+ny*glowW);
-  ctx.lineTo(x2-nx*glowW,y2-ny*glowW); ctx.lineTo(x1-nx*glowW,y1-ny*glowW);
-  ctx.closePath(); ctx.fillStyle=glowColor; ctx.fill();
+  ctx.moveTo(x1+nx*glowR, y1+ny*glowR); ctx.lineTo(x2+nx*glowR, y2+ny*glowR);
+  ctx.lineTo(x2-nx*glowR, y2-ny*glowR); ctx.lineTo(x1-nx*glowR, y1-ny*glowR);
+  ctx.closePath(); ctx.fillStyle = glowCol; ctx.fill();
   ctx.restore();
 
-  // ─ Drop shadow ─
-  const so=thick*0.7;
+  // ── Cast shadow ──
+  const shOff = thick * 0.65;
   ctx.beginPath();
-  ctx.moveTo(x1+nx*thick+so,y1+ny*thick+so*2);
-  ctx.lineTo(x2+nx*thick+so,y2+ny*thick+so*2);
-  ctx.lineTo(x2-nx*thick+so,y2-ny*thick+so*2);
-  ctx.lineTo(x1-nx*thick+so,y1-ny*thick+so*2);
-  ctx.closePath(); ctx.fillStyle='rgba(0,0,0,0.55)'; ctx.fill();
+  ctx.moveTo(x1+nx*insR+shOff, y1+ny*insR+shOff*1.8);
+  ctx.lineTo(x2+nx*insR+shOff, y2+ny*insR+shOff*1.8);
+  ctx.lineTo(x2-nx*insR+shOff, y2-ny*insR+shOff*1.8);
+  ctx.lineTo(x1-nx*insR+shOff, y1-ny*insR+shOff*1.8);
+  ctx.closePath(); ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fill();
 
-  // ─ Pipe body — layered gradients for a 3D tube look ─
-  // Bottom dark layer
+  // ── Insulation jacket (fibreglass / foam wrap) ──
+  // Outer jacket — slightly textured grey-beige
   ctx.beginPath();
-  ctx.moveTo(x1+nx*thick,y1+ny*thick); ctx.lineTo(x2+nx*thick,y2+ny*thick);
-  ctx.lineTo(x2-nx*thick,y2-ny*thick); ctx.lineTo(x1-nx*thick,y1-ny*thick);
+  ctx.moveTo(x1+nx*insR, y1+ny*insR); ctx.lineTo(x2+nx*insR, y2+ny*insR);
+  ctx.lineTo(x2-nx*insR, y2-ny*insR); ctx.lineTo(x1-nx*insR, y1-ny*insR);
   ctx.closePath();
-  const bodyGrd = ctx.createLinearGradient(x1+nx*thick,y1+ny*thick,x1-nx*thick,y1-ny*thick);
-  bodyGrd.addColorStop(0,   '#0e1a28');
-  bodyGrd.addColorStop(0.18,'#243d5a');
-  bodyGrd.addColorStop(0.5, '#1a3050');
-  bodyGrd.addColorStop(0.82,'#243d5a');
-  bodyGrd.addColorStop(1,   '#0a1420');
-  ctx.fillStyle=bodyGrd; ctx.fill();
+  const jacketG = ctx.createLinearGradient(x1+nx*insR,y1+ny*insR, x1-nx*insR,y1-ny*insR);
+  jacketG.addColorStop(0,   '#0e1418');
+  jacketG.addColorStop(0.10,'#1c2830');
+  jacketG.addColorStop(0.30,'#243040');
+  jacketG.addColorStop(0.50,'#1e2a38');
+  jacketG.addColorStop(0.70,'#162030');
+  jacketG.addColorStop(0.88,'#0e1828');
+  jacketG.addColorStop(1,   '#080e14');
+  ctx.fillStyle = jacketG; ctx.fill();
 
-  // ─ Top specular highlight ─
-  const hOff = thick*0.52, hW = thick*0.22;
+  // Jacket specular sheen (top edge glint)
+  const jShine = insR * 0.55;
   ctx.beginPath();
-  ctx.moveTo(x1+nx*hOff+nx*hW,y1+ny*hOff+ny*hW);
-  ctx.lineTo(x2+nx*hOff+nx*hW,y2+ny*hOff+ny*hW);
-  ctx.lineTo(x2+nx*hOff-nx*hW,y2+ny*hOff-ny*hW);
-  ctx.lineTo(x1+nx*hOff-nx*hW,y1+ny*hOff-ny*hW);
+  ctx.moveTo(x1+nx*insR,    y1+ny*insR);    ctx.lineTo(x2+nx*insR,    y2+ny*insR);
+  ctx.lineTo(x2+nx*jShine,  y2+ny*jShine);  ctx.lineTo(x1+nx*jShine,  y1+ny*jShine);
   ctx.closePath();
-  const hiGrd=ctx.createLinearGradient(x1,y1,x2,y2);
-  hiGrd.addColorStop(0,'rgba(150,200,255,0.0)');
-  hiGrd.addColorStop(0.25,'rgba(150,200,255,0.35)');
-  hiGrd.addColorStop(0.75,'rgba(150,200,255,0.35)');
-  hiGrd.addColorStop(1,'rgba(150,200,255,0.0)');
-  ctx.fillStyle=hiGrd; ctx.fill();
+  const shineG = ctx.createLinearGradient(x1+nx*insR,y1+ny*insR, x1+nx*jShine,y1+ny*jShine);
+  shineG.addColorStop(0, 'rgba(140,190,240,0.30)');
+  shineG.addColorStop(1, 'rgba(80,130,180,0.05)');
+  ctx.fillStyle = shineG; ctx.fill();
 
-  // ─ Animated rust/leak pulse overlay ─
-  if(leaking){
-    const t=(Math.sin(Date.now()/220)+1)/2;
+  // Insulation spiral wrap lines (visual texture)
+  const wrapSpacing = thick * 2.8;
+  const wrapCount = Math.ceil(len / wrapSpacing);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = 1.2;
+  for (let w = 0; w <= wrapCount; w++) {
+    const t = w / wrapCount;
+    const wx = x1 + dx*t, wy = y1 + dy*t;
     ctx.beginPath();
-    ctx.moveTo(x1+nx*thick,y1+ny*thick); ctx.lineTo(x2+nx*thick,y2+ny*thick);
-    ctx.lineTo(x2-nx*thick,y2-ny*thick); ctx.lineTo(x1-nx*thick,y1-ny*thick);
+    ctx.moveTo(wx + nx*insR, wy + ny*insR);
+    ctx.lineTo(wx - nx*insR, wy - ny*insR);
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // ── Steel pipe body beneath insulation (visible at flanges) ──
+  ctx.beginPath();
+  ctx.moveTo(x1+nx*thick, y1+ny*thick); ctx.lineTo(x2+nx*thick, y2+ny*thick);
+  ctx.lineTo(x2-nx*thick, y2-ny*thick); ctx.lineTo(x1-nx*thick, y1-ny*thick);
+  ctx.closePath();
+  const steelG = ctx.createLinearGradient(x1+nx*thick,y1+ny*thick, x1-nx*thick,y1-ny*thick);
+  steelG.addColorStop(0,   '#06080a');
+  steelG.addColorStop(0.12,'#1a2a3a');
+  steelG.addColorStop(0.40,'#2a4a6a');
+  steelG.addColorStop(0.55,'#1e3858');
+  steelG.addColorStop(0.78,'#1a2a3a');
+  steelG.addColorStop(1,   '#060810');
+  ctx.fillStyle = steelG; ctx.fill();
+
+  // Steel top specular streak
+  const sOff = thick * 0.55, sW = thick * 0.18;
+  ctx.beginPath();
+  ctx.moveTo(x1+nx*(sOff+sW), y1+ny*(sOff+sW)); ctx.lineTo(x2+nx*(sOff+sW), y2+ny*(sOff+sW));
+  ctx.lineTo(x2+nx*(sOff-sW), y2+ny*(sOff-sW)); ctx.lineTo(x1+nx*(sOff-sW), y1+ny*(sOff-sW));
+  ctx.closePath();
+  const streakG = ctx.createLinearGradient(x1,y1,x2,y2);
+  streakG.addColorStop(0,    'rgba(180,220,255,0.0)');
+  streakG.addColorStop(0.15, 'rgba(180,220,255,0.45)');
+  streakG.addColorStop(0.85, 'rgba(180,220,255,0.45)');
+  streakG.addColorStop(1,    'rgba(180,220,255,0.0)');
+  ctx.fillStyle = streakG; ctx.fill();
+
+  // ── Leak pulse colour overlay ──
+  if (leaking) {
+    const t = (Math.sin(Date.now()/200)+1)/2;
+    ctx.beginPath();
+    ctx.moveTo(x1+nx*insR, y1+ny*insR); ctx.lineTo(x2+nx*insR, y2+ny*insR);
+    ctx.lineTo(x2-nx*insR, y2-ny*insR); ctx.lineTo(x1-nx*insR, y1-ny*insR);
     ctx.closePath();
-    ctx.fillStyle=`rgba(239,68,68,${0.10+t*0.30})`; ctx.fill();
+    ctx.fillStyle = `rgba(239,68,68,${0.08 + t*0.25})`; ctx.fill();
   }
 
-  // ─ Pipe end caps (round flanges) ─
-  const capR = thick * 1.15;
-  [[x1,y1],[x2,y2]].forEach(([cx,cy])=>{
-    ctx.save(); ctx.filter='none';
-    // Flange shadow
-    ctx.beginPath(); ctx.arc(cx+so*0.5,cy+so,capR,0,Math.PI*2);
-    ctx.fillStyle='rgba(0,0,0,0.35)'; ctx.fill();
-    // Flange body
-    const fg=ctx.createRadialGradient(cx-capR*0.3,cy-capR*0.3,capR*0.05,cx,cy,capR);
-    fg.addColorStop(0,'#3d5f80'); fg.addColorStop(0.5,'#1e3a5a'); fg.addColorStop(1,'#0a1828');
-    ctx.beginPath(); ctx.arc(cx,cy,capR,0,Math.PI*2); ctx.fillStyle=fg; ctx.fill();
-    // Flange ring
-    ctx.beginPath(); ctx.arc(cx,cy,capR,0,Math.PI*2);
-    ctx.strokeStyle='#2a4a6a'; ctx.lineWidth=1.2; ctx.stroke();
+  // ── Weld seams (every ~120px along pipe) ──
+  const weldSpacing = W * 0.10;
+  const weldCount = Math.ceil(len / weldSpacing);
+  for (let w = 1; w < weldCount; w++) {
+    const t = w / weldCount;
+    const wx = x1 + dx*t, wy = y1 + dy*t;
+    // Weld bead ridge
+    ctx.save();
+    ctx.strokeStyle = 'rgba(50,80,110,0.65)'; ctx.lineWidth = insR * 0.28;
+    ctx.beginPath();
+    ctx.moveTo(wx + nx*(insR*0.9), wy + ny*(insR*0.9));
+    ctx.lineTo(wx - nx*(insR*0.9), wy - ny*(insR*0.9));
+    ctx.stroke();
+    // Weld highlight
+    ctx.strokeStyle = 'rgba(100,160,220,0.18)'; ctx.lineWidth = insR * 0.10;
+    ctx.beginPath();
+    ctx.moveTo(wx + nx*(insR*0.72), wy + ny*(insR*0.72));
+    ctx.lineTo(wx - nx*(insR*0.72), wy - ny*(insR*0.72));
+    ctx.stroke();
     ctx.restore();
+  }
+
+  // ── Bolted flanges at both ends ──
+  [[x1,y1],[x2,y2]].forEach(([cx,cy]) => {
+    const fR = insR * 1.35;   // flange face outer radius
+    const fW = insR * 0.55;   // flange axial thickness
+
+    // Flange shadow
+    ctx.save(); ctx.filter = 'blur(2px)';
+    ctx.beginPath();
+    ctx.moveTo(cx + ux*fW + nx*fR, cy + uy*fW + ny*fR);
+    ctx.lineTo(cx - ux*fW + nx*fR, cy - uy*fW + ny*fR);
+    ctx.lineTo(cx - ux*fW - nx*fR, cy - uy*fW - ny*fR);
+    ctx.lineTo(cx + ux*fW - nx*fR, cy + uy*fW - ny*fR);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fill();
+    ctx.restore();
+
+    // Flange body
+    ctx.beginPath();
+    ctx.moveTo(cx + ux*fW + nx*fR, cy + uy*fW + ny*fR);
+    ctx.lineTo(cx - ux*fW + nx*fR, cy - uy*fW + ny*fR);
+    ctx.lineTo(cx - ux*fW - nx*fR, cy - uy*fW - ny*fR);
+    ctx.lineTo(cx + ux*fW - nx*fR, cy + uy*fW - ny*fR);
+    ctx.closePath();
+    const fg = ctx.createLinearGradient(cx+nx*fR,cy+ny*fR, cx-nx*fR,cy-ny*fR);
+    fg.addColorStop(0,   '#060a0e');
+    fg.addColorStop(0.15,'#1a2e42');
+    fg.addColorStop(0.42,'#2e4e6e');
+    fg.addColorStop(0.58,'#233d5a');
+    fg.addColorStop(0.82,'#16263a');
+    fg.addColorStop(1,   '#040810');
+    ctx.fillStyle = fg; ctx.fill();
+
+    // Flange face edges
+    ctx.strokeStyle = 'rgba(80,130,180,0.55)'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(cx+ux*fW+nx*fR, cy+uy*fW+ny*fR);
+    ctx.lineTo(cx+ux*fW-nx*fR, cy+uy*fW-ny*fR); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(cx-ux*fW+nx*fR, cy-uy*fW+ny*fR);
+    ctx.lineTo(cx-ux*fW-nx*fR, cy-uy*fW-ny*fR); ctx.stroke();
+
+    // Bolt holes (6 bolts around flange)
+    const boltCount = 6;
+    const boltR = fR * 0.80;
+    const boltDotR = insR * 0.10;
+    for (let b = 0; b < boltCount; b++) {
+      const ang = (b / boltCount) * Math.PI; // half circle facing up/normal direction
+      // Map angle to perpendicular + axial offset
+      const bx = cx + nx*(boltR * Math.cos(ang * 1 - Math.PI/2))
+                     + ux*(fW * 0.2 * (b % 2 === 0 ? 1 : -1));
+      const by = cy + ny*(boltR * Math.cos(ang * 1 - Math.PI/2))
+                     + uy*(fW * 0.2 * (b % 2 === 0 ? 1 : -1));
+      // Bolt dot
+      const bg = ctx.createRadialGradient(bx - boltDotR*0.3, by - boltDotR*0.3, 0, bx, by, boltDotR);
+      bg.addColorStop(0, '#3a5a7a'); bg.addColorStop(0.6, '#1a2e42'); bg.addColorStop(1, '#080e14');
+      ctx.beginPath(); ctx.arc(bx, by, boltDotR, 0, Math.PI*2);
+      ctx.fillStyle = bg; ctx.fill();
+      ctx.beginPath(); ctx.arc(bx, by, boltDotR, 0, Math.PI*2);
+      ctx.strokeStyle = 'rgba(80,130,180,0.4)'; ctx.lineWidth = 0.7; ctx.stroke();
+    }
+
+    // Flange highlight rim
+    ctx.beginPath();
+    ctx.moveTo(cx+ux*fW+nx*fR, cy+uy*fW+ny*fR);
+    ctx.lineTo(cx-ux*fW+nx*fR, cy-uy*fW+ny*fR);
+    ctx.strokeStyle = 'rgba(130,190,240,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
   });
 }
 
@@ -573,13 +829,13 @@ function darkenHex(hex,a){
   return `rgb(${Math.max(0,r-a)},${Math.max(0,g-a)},${Math.max(0,b-a)})`;
 }
 
-// ─── LEAK EFFECT (dripping water) ───────────────────────────
+// ─── LEAK EFFECT (coolant drip) ─────────────────────────────
 function drawLeakEffects(ctx, W, H) {
   state.sensors.filter(s=>s.status==='leak').forEach(s=>{
     const x=s.nx*W, y=s.ny*H;
     const t=Date.now();
 
-    // Water drips
+    // Coolant drips (blue-green tint instead of water)
     for(let d=0;d<6;d++){
       const prog=((t/500+d*0.16)%1);
       const dx=(Math.sin(d*1.4)*W*0.008)*(0.5+prog*0.5);
@@ -588,26 +844,26 @@ function drawLeakEffects(ctx, W, H) {
       const dr=W*(0.004*(1-prog*0.6));
       if(alpha>0.05){
         ctx.beginPath(); ctx.arc(x+dx,y+dy,dr,0,Math.PI*2);
-        ctx.fillStyle=`rgba(80,160,240,${alpha})`; ctx.fill();
+        ctx.fillStyle=`rgba(40,200,180,${alpha})`; ctx.fill();
         // Teardrop tail
         if(prog>0.1){
           ctx.beginPath(); ctx.moveTo(x+dx,y+dy-dr); ctx.lineTo(x+dx,y+dy-dr*3.5);
-          ctx.strokeStyle=`rgba(80,160,240,${alpha*0.5})`; ctx.lineWidth=dr*1.2; ctx.lineCap='round'; ctx.stroke();
+          ctx.strokeStyle=`rgba(40,200,180,${alpha*0.5})`; ctx.lineWidth=dr*1.2; ctx.lineCap='round'; ctx.stroke();
         }
       }
     }
 
-    // Puddle / splash
+    // Coolant pool / splash
     const rProg=((t/600)%1);
     const pudR=W*0.012+rProg*W*0.022;
     ctx.beginPath(); ctx.ellipse(x,y+H*0.08,pudR,pudR*0.3,0,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(80,160,240,${(1-rProg)*0.55})`; ctx.lineWidth=1.5; ctx.stroke();
+    ctx.strokeStyle=`rgba(40,200,180,${(1-rProg)*0.55})`; ctx.lineWidth=1.5; ctx.stroke();
 
-    // Mud stain
-    const mudGrd=ctx.createRadialGradient(x,y+H*0.05,0,x,y+H*0.05,W*0.025);
-    mudGrd.addColorStop(0,'rgba(60,30,10,0.4)'); mudGrd.addColorStop(1,'transparent');
+    // Stain on concrete
+    const stainGrd=ctx.createRadialGradient(x,y+H*0.05,0,x,y+H*0.05,W*0.025);
+    stainGrd.addColorStop(0,'rgba(20,80,80,0.4)'); stainGrd.addColorStop(1,'transparent');
     ctx.beginPath(); ctx.arc(x,y+H*0.05,W*0.025,0,Math.PI*2);
-    ctx.fillStyle=mudGrd; ctx.fill();
+    ctx.fillStyle=stainGrd; ctx.fill();
   });
 }
 
@@ -615,33 +871,41 @@ function drawLeakEffects(ctx, W, H) {
 function drawOverlayLabels(ctx, W, H) {
   const GY=GROUND_Y*H;
 
-  // "HOME SYSTEM OVERVIEW" top-left label
+  // Section label
   ctx.save();
-  ctx.font=`bold ${Math.max(11,W*0.013)}px Segoe UI`;
-  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.font=`bold ${Math.max(10,W*0.012)}px Segoe UI, monospace`;
+  ctx.fillStyle='rgba(140,190,230,0.85)';
   ctx.textAlign='left';
-  ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=5;
-  ctx.fillText('HOME SYSTEM OVERVIEW', W*0.01, GY+H*0.055);
+  ctx.shadowColor='rgba(0,0,0,0.95)'; ctx.shadowBlur=5;
+  ctx.fillText('UNDERGROUND PIPE CROSS-SECTION', W*0.01, GY+H*0.058);
   ctx.restore();
 
-  // Water main in arrow (left)
-  drawArrowLabel(ctx,'WATER\nMAIN IN', W*0.005, GY+H*0.18, 'right', W);
-  // Water main out arrow (right)
-  drawArrowLabel(ctx,'WATER\nMAIN OUT', W*0.995, GY+H*0.18, 'left', W);
+  // Ground / underground divider annotation
+  ctx.save();
+  ctx.font=`${Math.max(8,W*0.009)}px Segoe UI`;
+  ctx.fillStyle='rgba(90,140,180,0.55)';
+  ctx.textAlign='right';
+  ctx.fillText('▲ SURFACE  /  SUBGRADE ▼', W*0.985, GY + H*0.040);
+  ctx.restore();
 
-  // Irrigation label
-  const irrSensor = state.sensors[13]; // S14
-  if(irrSensor){
-    const ix=irrSensor.nx*W, iy=irrSensor.ny*H;
+  // Municipal supply in arrow (left)
+  drawArrowLabel(ctx,'MUNICIPAL\nSUPPLY IN', W*0.005, GY+H*0.18, 'right', W);
+  // Discharge out arrow (right)
+  drawArrowLabel(ctx,'DISCHARGE\nOUT', W*0.995, GY+H*0.18, 'left', W);
+
+  // Fire suppression label
+  const fireSensor = state.sensors[13]; // S14
+  if(fireSensor){
+    const ix=fireSensor.nx*W, iy=fireSensor.ny*H;
     ctx.save();
-    ctx.strokeStyle='rgba(80,150,80,0.6)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
-    ctx.beginPath(); ctx.rect(ix-W*0.055, iy-H*0.015, W*0.11, H*0.05);
+    ctx.strokeStyle='rgba(200,60,60,0.55)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.rect(ix-W*0.065, iy-H*0.015, W*0.13, H*0.05);
     ctx.stroke(); ctx.setLineDash([]);
     ctx.font=`${Math.max(8,W*0.009)}px Segoe UI`;
-    ctx.fillStyle='rgba(180,255,180,0.8)'; ctx.textAlign='center';
+    ctx.fillStyle='rgba(255,160,160,0.80)'; ctx.textAlign='center';
     ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=4;
-    ctx.fillText('IRRIGATION', ix, iy+H*0.06);
-    ctx.fillText('SYSTEM', ix, iy+H*0.075);
+    ctx.fillText('FIRE SUPPRESSION', ix, iy+H*0.06);
+    ctx.fillText('(FM200)', ix, iy+H*0.075);
     ctx.restore();
   }
 }
@@ -1023,7 +1287,7 @@ function renderAnalyticsPage(){
 }
 
 function renderHealthPage(){
-  const items=[{icon:'📡',name:'24 Acoustic Sensors',detail:'All sensors online & responding',ok:true},{icon:'🔋',name:'Battery Level',detail:'98% — Estimated 14 months remaining',ok:true},{icon:'📶',name:'Network Connection',detail:'Signal strength: Excellent',ok:true},{icon:'🧠',name:'AI Engine',detail:'Model v4.1 — Last retrained: 3 days ago',ok:true},{icon:'💾',name:'Data Storage',detail:'4.2 GB used of 50 GB',ok:true},{icon:'☁️',name:'Cloud Sync',detail:'Last synced: just now',ok:true}];
+  const items=[{icon:'📡',name:'24 Acoustic Sensors',detail:'All sensors online & responding across sub-floor plenum',ok:true},{icon:'❄️',name:'Cooling System',detail:'Primary chilled water loop nominal — 7°C supply / 12°C return',ok:true},{icon:'📶',name:'Network Connection',detail:'Signal strength: Excellent — BACnet/IP link active',ok:true},{icon:'🧠',name:'AI Engine',detail:'Model v4.1 — Last retrained: 3 days ago',ok:true},{icon:'💾',name:'Data Storage',detail:'4.2 GB used of 50 GB',ok:true},{icon:'☁️',name:'Cloud Sync',detail:'Last synced: just now',ok:true},{icon:'🔥',name:'FM200 Suppression',detail:'Pressure nominal — 98% charge remaining',ok:true},{icon:'⚡',name:'UPS / Generator',detail:'UPS online — Generator tested 6 days ago',ok:true}];
   document.getElementById('healthItems').innerHTML=items.map(it=>`<div class="health-item"><div class="health-icon">${it.icon}</div><div><div class="health-name">${it.name}</div><div class="health-detail">${it.detail}</div></div><div class="health-status" style="color:${it.ok?'#22c55e':'#ef4444'}">${it.ok?'✓ OK':'✗ Issue'}</div></div>`).join('');
 }
 

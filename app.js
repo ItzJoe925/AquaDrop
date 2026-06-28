@@ -3,8 +3,8 @@
 //  Side-section cross-view renderer
 // ═══════════════════════════════════════════════════════════════
 
-let SCAN_INTERVAL = 10000;
-let LEAK_CHANCE   = 25;
+let SCAN_INTERVAL = 20000;
+let LEAK_CHANCE   = 50;
 let scanTimer     = null;
 //Version 3
 const state = {
@@ -62,52 +62,57 @@ const SENSOR_DEFS = [
   { id:'S24', label:'C-5', pipe:'Section C-5',            loc:'Far East Distribution Junction',nx:0.93, ny:0.80, type:'flow',      featured:false },
 ];
 
-// ── Pipe segment connections (pairs of sensor indices) ──────
-const PIPE_SEGS = [
-  // Water main in → upper run
-  [0,1],
-  // Upper horizontal main run
-  [1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8],[8,3],
-  // Main → exit
-  [7,8],
-  // Exit node → water main out
-  [8,3],
-  // Upper to exit right
-  [7,18-1],
-
-  // Vertical risers (sensor index → riser top sensor index)
-  [2,14],   // Bath-W: S03 → S15
-  [3,15],   // Kitchen: S04 → S16
-  [4,16],   // Laundry: S05 → S17
-  [6,17],   // Bath-E:  S07 → S18
-
-  // T-junctions: upper main → mid vertical connector
-  [1,20],   // S02 → S21 (mid west)
-  [20,9],   // S21 → S10 (lower west)
-  [0,20],   // main in → mid west
-
-  [5,21],   // S06(B-3) → S22 (mid center)
-  [21,11],  // S22 → S12 (lower center)
-
-  [7,22],   // S08 → S23 (east mid)
-  [22,12],  // S23 → S13 (lower east)
-  [8,22],
-
-  // Lower horizontal run
-  [9,10],[10,11],[11,12],
-  // Lower right
-  [12,23],[23,18],[18,19],[19,12],
-
-  // Irrigation drop
-  [10,13],
-
-  // Garage branch
-  [7,18],[18,19],
-  [22,23],
-
-  // Right exit connector
-  [8,3],[12,23],
+// ── TOP-DOWN MAP LAYOUT OVERRIDE ────────────────────────────
+// Reposition all sensors onto a clean rectilinear pipe grid (top-down map),
+// matching the reference "Pipe Network Map". Positions are normalised (nx,ny).
+const MAP_POS = [
+  /*0  S01 entry*/ [0.07, 0.18],
+  /*1  S02      */ [0.20, 0.18],
+  /*2  S03      */ [0.34, 0.18],
+  /*3  S04      */ [0.48, 0.18],
+  /*4  S05      */ [0.62, 0.18],
+  /*5  S06 feat */ [0.48, 0.42],
+  /*6  S07      */ [0.76, 0.18],
+  /*7  S08      */ [0.90, 0.18],
+  /*8  S09      */ [0.20, 0.42],
+  /*9  S10      */ [0.20, 0.62],
+  /*10 S11      */ [0.34, 0.62],
+  /*11 S12      */ [0.48, 0.62],
+  /*12 S13      */ [0.62, 0.62],
+  /*13 S14      */ [0.76, 0.62],
+  /*14 S15      */ [0.34, 0.42],
+  /*15 S16      */ [0.62, 0.42],
+  /*16 S17      */ [0.76, 0.42],
+  /*17 S18      */ [0.90, 0.62],
+  /*18 S19      */ [0.20, 0.84],
+  /*19 S20      */ [0.34, 0.84],
+  /*20 S21      */ [0.48, 0.84],
+  /*21 S22      */ [0.62, 0.84],
+  /*22 S23      */ [0.76, 0.84],
+  /*23 S24      */ [0.90, 0.84],
 ];
+SENSOR_DEFS.forEach((d, i) => { if (MAP_POS[i]) { d.nx = MAP_POS[i][0]; d.ny = MAP_POS[i][1]; } });
+
+// ── Pipe segment connections (orthogonal grid, pairs of sensor indices) ──
+const PIPE_SEGS = [
+  // Top header run
+  [0,1],[1,2],[2,3],[3,4],[4,6],[6,7],
+  // Mid header run
+  [8,14],[14,5],[5,15],[15,16],
+  // Lower header run
+  [9,10],[10,11],[11,12],[12,13],[13,17],
+  // Bottom header run
+  [18,19],[19,20],[20,21],[21,22],[22,23],
+  // Vertical risers: top -> mid
+  [1,8],[2,14],[3,5],[4,15],[6,16],
+  // Vertical risers: mid -> lower
+  [8,9],[14,10],[5,11],[15,12],[16,13],
+  // Right edge riser
+  [7,17],
+  // Vertical risers: lower -> bottom
+  [9,18],[10,19],[11,20],[12,21],[13,22],[17,23],
+];
+
 
 // Clean invalid segs
 const VALID_SEGS = PIPE_SEGS.filter(([a,b])=>
@@ -185,568 +190,125 @@ function initDirtParticles(W, H) {
 
 // ─── BACKGROUND: EXTERIOR DATA CENTER + UNDERGROUND ──────────
 function drawBackground(ctx, W, H) {
-  const GY = GROUND_Y * H;
-  drawSky(ctx, W, GY);
-  drawDataCenterExterior(ctx, W, GY);
-  drawGroundSurface(ctx, W, H, GY);
-  drawUnderground(ctx, W, H, GY);
-}
+  // Deep navy map base
+  const bg = ctx.createLinearGradient(0, 0, 0, H);
+  bg.addColorStop(0, '#0c1422');
+  bg.addColorStop(1, '#070b14');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0, 0, W, H);
 
-// ── Sky with dusk gradient ────────────────────────────────────
-function drawSky(ctx, W, GY) {
-  const sky = ctx.createLinearGradient(0, 0, 0, GY);
-  sky.addColorStop(0,   '#06090f');
-  sky.addColorStop(0.35,'#0a1020');
-  sky.addColorStop(0.75,'#0d1830');
-  sky.addColorStop(1,   '#152540');
-  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, GY);
-
-  // Stars
-  for (let i = 0; i < 80; i++) {
-    const sx = ((i * 173.3) % W);
-    const sy = ((i * 59.7) % (GY * 0.6));
-    const sr = 0.4 + (i % 3) * 0.4;
-    const sa = 0.3 + (i % 5) * 0.14;
-    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI*2);
-    ctx.fillStyle = `rgba(200,220,255,${sa})`; ctx.fill();
-  }
-  // Moon
+  // Subtle blueprint grid
   ctx.save();
-  const moonX = W * 0.88, moonY = GY * 0.18, moonR = W * 0.022;
-  const moonGlow = ctx.createRadialGradient(moonX, moonY, 0, moonX, moonY, moonR * 4);
-  moonGlow.addColorStop(0, 'rgba(200,220,255,0.12)');
-  moonGlow.addColorStop(1, 'transparent');
-  ctx.beginPath(); ctx.arc(moonX, moonY, moonR * 4, 0, Math.PI*2);
-  ctx.fillStyle = moonGlow; ctx.fill();
-  const mg = ctx.createRadialGradient(moonX - moonR*0.3, moonY - moonR*0.3, moonR*0.1, moonX, moonY, moonR);
-  mg.addColorStop(0, '#e8eeff'); mg.addColorStop(0.6, '#c0ccee'); mg.addColorStop(1, '#8090b0');
-  ctx.beginPath(); ctx.arc(moonX, moonY, moonR, 0, Math.PI*2);
-  ctx.fillStyle = mg; ctx.fill();
-  ctx.restore();
-}
-
-// ── Massive data center exterior ─────────────────────────────
-function drawDataCenterExterior(ctx, W, GY) {
-  const bL = W * 0.02, bR = W * 0.98, bW = bR - bL;
-  const bTop = GY * 0.03, bH = GY - bTop;
-
-  // ── Foundation / base plinth ──
-  const plinthH = bH * 0.05;
-  const plinthGrd = ctx.createLinearGradient(0, GY - plinthH, 0, GY);
-  plinthGrd.addColorStop(0, '#1a2530'); plinthGrd.addColorStop(1, '#0d161e');
-  ctx.fillStyle = plinthGrd;
-  ctx.fillRect(bL - W*0.005, GY - plinthH, bW + W*0.01, plinthH);
-
-  // ── Main wall — precast concrete panels ──
-  const wallGrd = ctx.createLinearGradient(bL, bTop, bL, GY);
-  wallGrd.addColorStop(0, '#2a3540');
-  wallGrd.addColorStop(0.4, '#222d38');
-  wallGrd.addColorStop(1, '#1a2530');
-  ctx.fillStyle = wallGrd;
-  ctx.fillRect(bL, bTop, bW, bH - plinthH);
-
-  // Concrete panel grid — vertical seams
-  ctx.strokeStyle = 'rgba(10,20,30,0.7)'; ctx.lineWidth = 1.5;
-  const panelW = bW / 12;
-  for (let p = 1; p < 12; p++) {
-    const px = bL + p * panelW;
-    ctx.beginPath(); ctx.moveTo(px, bTop); ctx.lineTo(px, GY - plinthH); ctx.stroke();
-  }
-  // Horizontal seams (3 courses)
-  for (let r = 1; r <= 3; r++) {
-    const ry = bTop + bH * (r * 0.24);
-    ctx.beginPath(); ctx.moveTo(bL, ry); ctx.lineTo(bR, ry); ctx.stroke();
-  }
-
-  // Subtle wall surface texture — slight lighter highlight on each panel
-  for (let p = 0; p < 12; p++) {
-    const px = bL + p * panelW;
-    const panelGrd = ctx.createLinearGradient(px + 2, bTop, px + panelW - 2, bTop);
-    panelGrd.addColorStop(0, 'rgba(255,255,255,0.025)');
-    panelGrd.addColorStop(0.5, 'rgba(255,255,255,0.055)');
-    panelGrd.addColorStop(1, 'rgba(255,255,255,0.015)');
-    ctx.fillStyle = panelGrd;
-    ctx.fillRect(px + 1, bTop + 1, panelW - 2, bH - plinthH - 2);
-  }
-
-  // ── Parapet / roof edge ──
-  const parapetH = bH * 0.05;
-  const parapetGrd = ctx.createLinearGradient(0, bTop, 0, bTop + parapetH);
-  parapetGrd.addColorStop(0, '#1a222c'); parapetGrd.addColorStop(1, '#12191f');
-  ctx.fillStyle = parapetGrd;
-  ctx.fillRect(bL - 4, bTop, bW + 8, parapetH);
-  // Parapet top highlight
-  ctx.strokeStyle = 'rgba(80,120,160,0.4)'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(bL-4, bTop); ctx.lineTo(bR+4, bTop); ctx.stroke();
-  // Parapet bottom shadow
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)'; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(bL-4, bTop+parapetH); ctx.lineTo(bR+4, bTop+parapetH); ctx.stroke();
-
-  // ── Rooftop HVAC chillers (large rectangular units) ──
-  const roofTop = bTop - GY * 0.0;
-  const chillerDefs = [
-    { fx: 0.08, fw: 0.13 }, { fx: 0.25, fw: 0.16 }, { fx: 0.46, fw: 0.11 },
-    { fx: 0.62, fw: 0.16 }, { fx: 0.83, fw: 0.12 },
-  ];
-  chillerDefs.forEach(({ fx, fw }) => {
-    const cx = bL + bW * fx, cw = bW * fw, ch = GY * 0.07;
-    const cy = bTop - ch + parapetH * 0.6;
-    // Chiller body
-    const cg = ctx.createLinearGradient(cx, cy, cx, cy + ch);
-    cg.addColorStop(0, '#1e2e3c'); cg.addColorStop(1, '#131e28');
-    ctx.fillStyle = cg; ctx.fillRect(cx, cy, cw, ch);
-    ctx.strokeStyle = '#0a1520'; ctx.lineWidth = 1.5;
-    ctx.strokeRect(cx, cy, cw, ch);
-    // Louvre / vent slats
-    ctx.strokeStyle = 'rgba(30,60,90,0.8)'; ctx.lineWidth = 1;
-    const slats = 6;
-    for (let s = 1; s <= slats; s++) {
-      const sy = cy + ch * (s / (slats + 1));
-      ctx.beginPath(); ctx.moveTo(cx + cw*0.05, sy); ctx.lineTo(cx + cw*0.95, sy); ctx.stroke();
-    }
-    // Status light
-    ctx.beginPath(); ctx.arc(cx + cw*0.9, cy + ch*0.15, 3, 0, Math.PI*2);
-    ctx.fillStyle = '#22c55e'; ctx.fill();
-    const lg = ctx.createRadialGradient(cx + cw*0.9, cy + ch*0.15, 0, cx + cw*0.9, cy + ch*0.15, 8);
-    lg.addColorStop(0, 'rgba(34,197,94,0.4)'); lg.addColorStop(1, 'transparent');
-    ctx.beginPath(); ctx.arc(cx + cw*0.9, cy + ch*0.15, 8, 0, Math.PI*2);
-    ctx.fillStyle = lg; ctx.fill();
-  });
-
-  // ── Cooling towers / CTUs at top ──
-  const towerDefs = [{ fx: 0.37 }, { fx: 0.56 }];
-  towerDefs.forEach(({ fx }) => {
-    const tx = bL + bW * fx, tw = bW * 0.06, th = GY * 0.11;
-    const ty = bTop - th + parapetH * 0.5;
-    const tg = ctx.createLinearGradient(tx, ty, tx, ty + th);
-    tg.addColorStop(0, '#1a2838'); tg.addColorStop(0.5, '#152030'); tg.addColorStop(1, '#0e1820');
-    ctx.fillStyle = tg; ctx.fillRect(tx - tw/2, ty, tw, th);
-    ctx.strokeStyle = '#0a1520'; ctx.lineWidth = 1;
-    ctx.strokeRect(tx - tw/2, ty, tw, th);
-    // Circular fan grille on top
-    ctx.beginPath(); ctx.ellipse(tx, ty + th * 0.25, tw*0.38, tw*0.38, 0, 0, Math.PI*2);
-    ctx.strokeStyle = '#0e2030'; ctx.lineWidth = 1.5; ctx.stroke();
-    // Animated rotation hint
-    const angle = (Date.now() / 1200) % (Math.PI * 2);
-    ctx.save();
-    ctx.translate(tx, ty + th*0.25);
-    ctx.rotate(angle);
-    for (let b = 0; b < 4; b++) {
-      ctx.rotate(Math.PI / 2);
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, tw*0.33);
-      ctx.strokeStyle = 'rgba(40,80,120,0.7)'; ctx.lineWidth = tw*0.07; ctx.stroke();
-    }
-    ctx.restore();
-    // Steam plume
-    const t2 = Date.now() / 1000;
-    for (let pl = 0; pl < 4; pl++) {
-      const py = ty - pl * th * 0.18 - ((t2 * 0.5 + pl * 0.25) % 1) * th * 0.5;
-      const pa = 0.06 - pl * 0.013;
-      const pr = tw * (0.25 + pl * 0.12);
-      if (pa > 0) {
-        ctx.beginPath(); ctx.ellipse(tx + Math.sin(t2 + pl)*3, py, pr, pr*0.5, 0, 0, Math.PI*2);
-        ctx.fillStyle = `rgba(180,200,220,${pa})`; ctx.fill();
-      }
-    }
-  });
-
-  // ── Pipes on building exterior wall (supply & return visible outside) ──
-  drawExteriorWallPipes(ctx, W, GY, bL, bR, bH, bTop);
-
-  // ── Security fence ──
-  const fenceY = GY - plinthH * 0.3;
-  ctx.strokeStyle = 'rgba(40,70,100,0.6)'; ctx.lineWidth = 1;
-  // Left fence segment
-  ctx.beginPath(); ctx.moveTo(0, fenceY); ctx.lineTo(bL, fenceY); ctx.stroke();
-  // Right fence segment
-  ctx.beginPath(); ctx.moveTo(bR, fenceY); ctx.lineTo(W, fenceY); ctx.stroke();
-  // Fence posts
-  for (let fp = 0; fp < W; fp += W*0.04) {
-    if (fp < bL || fp > bR) {
-      ctx.beginPath(); ctx.moveTo(fp, fenceY); ctx.lineTo(fp, fenceY - GY*0.03);
-      ctx.strokeStyle = 'rgba(40,70,100,0.5)'; ctx.lineWidth = 2; ctx.stroke();
-    }
-  }
-
-  // ── Entrance / loading dock ──
-  const dockW = bW * 0.08, dockH = bH * 0.18;
-  const dockX = bL + bW * 0.46, dockY = GY - plinthH - dockH;
-  // Dock surround
-  ctx.fillStyle = '#0e1820';
-  ctx.fillRect(dockX - dockW*0.1, dockY - dockH*0.05, dockW*1.2, dockH*1.05 + plinthH);
-  // Steel door
-  const doorG = ctx.createLinearGradient(dockX, dockY, dockX + dockW, dockY);
-  doorG.addColorStop(0, '#1a2838'); doorG.addColorStop(0.5, '#1e3048'); doorG.addColorStop(1, '#1a2838');
-  ctx.fillStyle = doorG; ctx.fillRect(dockX, dockY, dockW, dockH);
-  // Door panel ribs
-  ctx.strokeStyle = '#0e1a28'; ctx.lineWidth = 1.2;
-  for (let rib = 1; rib < 5; rib++) {
-    const ry = dockY + dockH * (rib / 5);
-    ctx.beginPath(); ctx.moveTo(dockX, ry); ctx.lineTo(dockX + dockW, ry); ctx.stroke();
-  }
-  ctx.strokeStyle = '#0a1520'; ctx.lineWidth = 2;
-  ctx.strokeRect(dockX, dockY, dockW, dockH);
-  // Security light above door
-  ctx.beginPath(); ctx.arc(dockX + dockW*0.5, dockY - 6, 4, 0, Math.PI*2);
-  ctx.fillStyle = '#f59e0b'; ctx.fill();
-  const secGlow = ctx.createRadialGradient(dockX+dockW*0.5, dockY-6, 0, dockX+dockW*0.5, dockY-6, 30);
-  secGlow.addColorStop(0, 'rgba(245,158,11,0.25)'); secGlow.addColorStop(1, 'transparent');
-  ctx.beginPath(); ctx.arc(dockX+dockW*0.5, dockY-6, 30, 0, Math.PI*2);
-  ctx.fillStyle = secGlow; ctx.fill();
-  // "DATA CENTER" label on building
-  ctx.save();
-  ctx.font = `bold ${Math.max(13, W*0.018)}px Segoe UI, monospace`;
-  ctx.fillStyle = 'rgba(160,200,240,0.55)';
-  ctx.textAlign = 'center';
-  ctx.letterSpacing = '3px';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)'; ctx.shadowBlur = 6;
-  ctx.fillText('DATA CENTER  DC-01', bL + bW*0.5, bTop + bH*0.38);
-  ctx.font = `${Math.max(9, W*0.010)}px Segoe UI`;
-  ctx.fillStyle = 'rgba(100,150,180,0.40)';
-  ctx.fillText('TIER III  ·  RESTRICTED ACCESS  ·  24/7 MONITORING', bL + bW*0.5, bTop + bH*0.46);
-  ctx.restore();
-
-  // Building outer shadow / edge
-  ctx.strokeStyle = 'rgba(0,0,0,0.6)'; ctx.lineWidth = 2.5;
-  ctx.strokeRect(bL, bTop, bW, bH - plinthH);
-}
-
-// ── Pipes visible on exterior wall (surface-mounted supply/return) ──
-function drawExteriorWallPipes(ctx, W, GY, bL, bR, bH, bTop) {
-  // Two large-diameter pipes run along the base of the building exterior
-  // before going underground — supply (cold, blue) and return (warm, orange)
-  const pipeY1 = GY - bH * 0.08; // chilled supply
-  const pipeY2 = GY - bH * 0.04; // warm return
-  const pR1 = W * 0.018; // supply pipe radius
-  const pR2 = W * 0.013; // return pipe radius
-
-  [[pipeY1, pR1, '#1a4a7a', '#3b9eff', false],
-   [pipeY2, pR2, '#5a2800', '#f59e0b', true]].forEach(([py, pr, dark, light, isWarm]) => {
-    // Pipe shadow
-    ctx.save(); ctx.filter = 'blur(4px)';
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(bL, py - pr + pr*0.5, bR - bL, pr * 2.2);
-    ctx.restore();
-
-    // Pipe body gradient (top-lit cylinder)
-    const pg = ctx.createLinearGradient(0, py - pr, 0, py + pr);
-    pg.addColorStop(0,   'rgba(255,255,255,0.25)');
-    pg.addColorStop(0.15, light);
-    pg.addColorStop(0.5,  dark);
-    pg.addColorStop(0.85, dark);
-    pg.addColorStop(1,   'rgba(0,0,0,0.6)');
-    ctx.fillStyle = pg;
-    ctx.fillRect(bL, py - pr, bR - bL, pr * 2);
-
-    // Specular highlight strip
-    const sg = ctx.createLinearGradient(0, py - pr, 0, py - pr*0.3);
-    sg.addColorStop(0, 'rgba(255,255,255,0.55)');
-    sg.addColorStop(1, 'rgba(255,255,255,0.0)');
-    ctx.fillStyle = sg;
-    ctx.fillRect(bL, py - pr, bR - bL, pr * 0.7);
-
-    // Pipe thermal insulation wrap seams (every ~80px)
-    ctx.strokeStyle = `rgba(0,0,0,0.35)`; ctx.lineWidth = 1.5;
-    for (let sx = bL; sx < bR; sx += W * 0.06) {
-      ctx.beginPath(); ctx.moveTo(sx, py - pr); ctx.lineTo(sx, py + pr); ctx.stroke();
-    }
-
-    // Label badge on pipe
-    const lx = bL + (bR - bL) * 0.12;
-    const label = isWarm ? 'RETURN  +12°C' : 'SUPPLY  +7°C';
-    const lColor = isWarm ? '#f59e0b' : '#3b9eff';
-    ctx.save();
-    ctx.fillStyle = 'rgba(10,15,25,0.8)';
-    const tw = ctx.measureText(label).width + 16;
-    ctx.fillRect(lx - tw/2, py - 9, tw, 18);
-    ctx.strokeStyle = lColor; ctx.lineWidth = 1;
-    ctx.strokeRect(lx - tw/2, py - 9, tw, 18);
-    ctx.fillStyle = lColor;
-    ctx.font = `bold ${Math.max(8, W*0.009)}px Segoe UI, monospace`;
-    ctx.textAlign = 'center';
-    ctx.fillText(label, lx, py + 4);
-    ctx.restore();
-  });
-}
-
-// ── Ground surface (asphalt / concrete apron) ─────────────────
-function drawGroundSurface(ctx, W, H, GY) {
-  // Concrete apron
-  const gGrd = ctx.createLinearGradient(0, GY - 3, 0, GY + 10);
-  gGrd.addColorStop(0, '#1e2c3a');
-  gGrd.addColorStop(0.5, '#141f28');
-  gGrd.addColorStop(1, 'transparent');
-  ctx.fillStyle = gGrd;
-  ctx.fillRect(0, GY - 3, W, 14);
-
-  // Ground label dashed line
-  ctx.save();
-  ctx.setLineDash([8, 5]);
-  ctx.strokeStyle = 'rgba(60,100,140,0.35)';
+  ctx.strokeStyle = 'rgba(60,110,170,0.07)';
   ctx.lineWidth = 1;
-  ctx.beginPath(); ctx.moveTo(0, GY); ctx.lineTo(W, GY); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
-}
-
-// ── Underground — soil + bedrock cross-section ────────────────
-function drawUnderground(ctx, W, H, GY) {
-  // Main soil body
-  const sGrd = ctx.createLinearGradient(0, GY, 0, H);
-  sGrd.addColorStop(0,   '#1c1208');
-  sGrd.addColorStop(0.12,'#16100a');
-  sGrd.addColorStop(0.35,'#110e0a');
-  sGrd.addColorStop(0.65,'#0d0c0a');
-  sGrd.addColorStop(1,   '#08090a');
-  ctx.fillStyle = sGrd; ctx.fillRect(0, GY, W, H - GY);
-
-  // Soil strata bands
-  const strata = [
-    { y: 0.10, h: 0.06, c: 'rgba(28,18,8,0.7)' },   // topsoil
-    { y: 0.22, h: 0.04, c: 'rgba(35,25,12,0.5)' },   // clay seam
-    { y: 0.45, h: 0.08, c: 'rgba(14,12,10,0.6)' },   // hardpan
-    { y: 0.72, h: 0.10, c: 'rgba(10,9,9,0.8)' },     // bedrock
-  ];
-  strata.forEach(({ y, h, c }) => {
-    const sy = GY + (H - GY) * y;
-    const sh = (H - GY) * h;
-    ctx.fillStyle = c; ctx.fillRect(0, sy, W, sh);
-    // Stratum edge line
-    ctx.strokeStyle = 'rgba(0,0,0,0.4)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0, sy); ctx.lineTo(W, sy); ctx.stroke();
-  });
-
-  // Aggregate / gravel particles
-  dirtParticles.forEach(p => {
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
-    ctx.fillStyle = p.r > 2.5 ? '#1a1208' : '#22180a';
-    ctx.globalAlpha = p.a * 0.55; ctx.fill(); ctx.globalAlpha = 1;
-  });
-
-  // Rock inclusions
-  const rocks = [
-    [W*0.08, GY+(H-GY)*0.18, 14, 9], [W*0.22, GY+(H-GY)*0.32, 10, 6],
-    [W*0.41, GY+(H-GY)*0.52, 18, 10],[W*0.58, GY+(H-GY)*0.24, 12, 7],
-    [W*0.73, GY+(H-GY)*0.41, 16, 9], [W*0.87, GY+(H-GY)*0.30, 11, 6],
-  ];
-  rocks.forEach(([rx, ry, rw, rh]) => {
-    const rg = ctx.createRadialGradient(rx - rw*0.2, ry - rh*0.2, 0, rx, ry, rw);
-    rg.addColorStop(0, '#2a2420'); rg.addColorStop(1, '#14100e');
-    ctx.beginPath(); ctx.ellipse(rx, ry, rw, rh, 0.3, 0, Math.PI*2);
-    ctx.fillStyle = rg; ctx.fill();
-  });
-
-  // Depth vignette
-  const vig = ctx.createLinearGradient(0, GY, 0, H);
-  vig.addColorStop(0, 'transparent'); vig.addColorStop(1, 'rgba(0,0,0,0.75)');
-  ctx.fillStyle = vig; ctx.fillRect(0, GY, W, H - GY);
-}
-
-
-
-
-
-
-
-// ─── REALISTIC INDUSTRIAL PIPE DRAWING ───────────────────────
-function drawPipeSegment(ctx, x1,y1, x2,y2, leaking, highP, W) {
-  const dx=x2-x1, dy=y2-y1;
-  const len=Math.hypot(dx,dy); if(len<1) return;
-  const ux=dx/len, uy=dy/len;       // unit along pipe
-  const nx=-uy,   ny=ux;            // unit normal (perpendicular)
-
-  const thick = W * 0.018;          // pipe outer radius
-  const insR  = thick * 1.28;       // insulation wrap radius
-
-  // ── Outer ambient glow (leak = red, highP = amber, normal = blue) ──
-  const glowCol = leaking ? 'rgba(239,68,68,0.30)' : highP ? 'rgba(245,158,11,0.22)' : 'rgba(30,100,200,0.12)';
-  const glowR   = insR * (leaking ? 3.2 : 2.0);
-  ctx.save(); ctx.filter = `blur(${leaking ? 8 : 4}px)`;
-  ctx.beginPath();
-  ctx.moveTo(x1+nx*glowR, y1+ny*glowR); ctx.lineTo(x2+nx*glowR, y2+ny*glowR);
-  ctx.lineTo(x2-nx*glowR, y2-ny*glowR); ctx.lineTo(x1-nx*glowR, y1-ny*glowR);
-  ctx.closePath(); ctx.fillStyle = glowCol; ctx.fill();
+  const step = W * 0.045;
+  for (let x = 0; x <= W; x += step) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y <= H; y += step) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
   ctx.restore();
 
-  // ── Cast shadow ──
-  const shOff = thick * 0.65;
-  ctx.beginPath();
-  ctx.moveTo(x1+nx*insR+shOff, y1+ny*insR+shOff*1.8);
-  ctx.lineTo(x2+nx*insR+shOff, y2+ny*insR+shOff*1.8);
-  ctx.lineTo(x2-nx*insR+shOff, y2-ny*insR+shOff*1.8);
-  ctx.lineTo(x1-nx*insR+shOff, y1-ny*insR+shOff*1.8);
-  ctx.closePath(); ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fill();
+  // Zone regions
+  drawZone(ctx, W, H, W*0.03,  H*0.06, W*0.55, H*0.50, 'ZONE A');
+  drawZone(ctx, W, H, W*0.66,  H*0.06, W*0.31, H*0.74, 'ZONE B');
+  drawZone(ctx, W, H, W*0.10,  H*0.70, W*0.50, H*0.26, 'ZONE C');
 
-  // ── Insulation jacket (fibreglass / foam wrap) ──
-  // Outer jacket — slightly textured grey-beige
-  ctx.beginPath();
-  ctx.moveTo(x1+nx*insR, y1+ny*insR); ctx.lineTo(x2+nx*insR, y2+ny*insR);
-  ctx.lineTo(x2-nx*insR, y2-ny*insR); ctx.lineTo(x1-nx*insR, y1-ny*insR);
-  ctx.closePath();
-  const jacketG = ctx.createLinearGradient(x1+nx*insR,y1+ny*insR, x1-nx*insR,y1-ny*insR);
-  jacketG.addColorStop(0,   '#0e1418');
-  jacketG.addColorStop(0.10,'#1c2830');
-  jacketG.addColorStop(0.30,'#243040');
-  jacketG.addColorStop(0.50,'#1e2a38');
-  jacketG.addColorStop(0.70,'#162030');
-  jacketG.addColorStop(0.88,'#0e1828');
-  jacketG.addColorStop(1,   '#080e14');
-  ctx.fillStyle = jacketG; ctx.fill();
+  // Soft inner vignette
+  const vig = ctx.createRadialGradient(W/2, H/2, H*0.2, W/2, H/2, H*0.9);
+  vig.addColorStop(0, 'transparent');
+  vig.addColorStop(1, 'rgba(0,0,0,0.45)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+}
 
-  // Jacket specular sheen (top edge glint)
-  const jShine = insR * 0.55;
-  ctx.beginPath();
-  ctx.moveTo(x1+nx*insR,    y1+ny*insR);    ctx.lineTo(x2+nx*insR,    y2+ny*insR);
-  ctx.lineTo(x2+nx*jShine,  y2+ny*jShine);  ctx.lineTo(x1+nx*jShine,  y1+ny*jShine);
-  ctx.closePath();
-  const shineG = ctx.createLinearGradient(x1+nx*insR,y1+ny*insR, x1+nx*jShine,y1+ny*jShine);
-  shineG.addColorStop(0, 'rgba(140,190,240,0.30)');
-  shineG.addColorStop(1, 'rgba(80,130,180,0.05)');
-  ctx.fillStyle = shineG; ctx.fill();
-
-  // Insulation spiral wrap lines (visual texture)
-  const wrapSpacing = thick * 2.8;
-  const wrapCount = Math.ceil(len / wrapSpacing);
+function drawZone(ctx, W, H, x, y, w, h, label) {
   ctx.save();
-  ctx.strokeStyle = 'rgba(0,0,0,0.32)'; ctx.lineWidth = 1.2;
-  for (let w = 0; w <= wrapCount; w++) {
-    const t = w / wrapCount;
-    const wx = x1 + dx*t, wy = y1 + dy*t;
-    ctx.beginPath();
-    ctx.moveTo(wx + nx*insR, wy + ny*insR);
-    ctx.lineTo(wx - nx*insR, wy - ny*insR);
-    ctx.stroke();
-  }
+  ctx.fillStyle = 'rgba(40,80,130,0.05)';
+  ctx.strokeStyle = 'rgba(70,120,180,0.18)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([6, 5]);
+  ctx.beginPath(); ctx.roundRect(x, y, w, h, 10); ctx.fill(); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font = `600 ${Math.max(11, W*0.014)}px Segoe UI, sans-serif`;
+  ctx.fillStyle = 'rgba(120,160,210,0.45)';
+  ctx.textAlign = 'left';
+  ctx.fillText(label, x + 12, y + h - 12);
   ctx.restore();
-
-  // ── Steel pipe body beneath insulation (visible at flanges) ──
-  ctx.beginPath();
-  ctx.moveTo(x1+nx*thick, y1+ny*thick); ctx.lineTo(x2+nx*thick, y2+ny*thick);
-  ctx.lineTo(x2-nx*thick, y2-ny*thick); ctx.lineTo(x1-nx*thick, y1-ny*thick);
-  ctx.closePath();
-  const steelG = ctx.createLinearGradient(x1+nx*thick,y1+ny*thick, x1-nx*thick,y1-ny*thick);
-  steelG.addColorStop(0,   '#06080a');
-  steelG.addColorStop(0.12,'#1a2a3a');
-  steelG.addColorStop(0.40,'#2a4a6a');
-  steelG.addColorStop(0.55,'#1e3858');
-  steelG.addColorStop(0.78,'#1a2a3a');
-  steelG.addColorStop(1,   '#060810');
-  ctx.fillStyle = steelG; ctx.fill();
-
-  // Steel top specular streak
-  const sOff = thick * 0.55, sW = thick * 0.18;
-  ctx.beginPath();
-  ctx.moveTo(x1+nx*(sOff+sW), y1+ny*(sOff+sW)); ctx.lineTo(x2+nx*(sOff+sW), y2+ny*(sOff+sW));
-  ctx.lineTo(x2+nx*(sOff-sW), y2+ny*(sOff-sW)); ctx.lineTo(x1+nx*(sOff-sW), y1+ny*(sOff-sW));
-  ctx.closePath();
-  const streakG = ctx.createLinearGradient(x1,y1,x2,y2);
-  streakG.addColorStop(0,    'rgba(180,220,255,0.0)');
-  streakG.addColorStop(0.15, 'rgba(180,220,255,0.45)');
-  streakG.addColorStop(0.85, 'rgba(180,220,255,0.45)');
-  streakG.addColorStop(1,    'rgba(180,220,255,0.0)');
-  ctx.fillStyle = streakG; ctx.fill();
-
-  // ── Leak pulse colour overlay ──
-  if (leaking) {
-    const t = (Math.sin(Date.now()/200)+1)/2;
-    ctx.beginPath();
-    ctx.moveTo(x1+nx*insR, y1+ny*insR); ctx.lineTo(x2+nx*insR, y2+ny*insR);
-    ctx.lineTo(x2-nx*insR, y2-ny*insR); ctx.lineTo(x1-nx*insR, y1-ny*insR);
-    ctx.closePath();
-    ctx.fillStyle = `rgba(239,68,68,${0.08 + t*0.25})`; ctx.fill();
-  }
-
-  // ── Weld seams (every ~120px along pipe) ──
-  const weldSpacing = W * 0.10;
-  const weldCount = Math.ceil(len / weldSpacing);
-  for (let w = 1; w < weldCount; w++) {
-    const t = w / weldCount;
-    const wx = x1 + dx*t, wy = y1 + dy*t;
-    // Weld bead ridge
-    ctx.save();
-    ctx.strokeStyle = 'rgba(50,80,110,0.65)'; ctx.lineWidth = insR * 0.28;
-    ctx.beginPath();
-    ctx.moveTo(wx + nx*(insR*0.9), wy + ny*(insR*0.9));
-    ctx.lineTo(wx - nx*(insR*0.9), wy - ny*(insR*0.9));
-    ctx.stroke();
-    // Weld highlight
-    ctx.strokeStyle = 'rgba(100,160,220,0.18)'; ctx.lineWidth = insR * 0.10;
-    ctx.beginPath();
-    ctx.moveTo(wx + nx*(insR*0.72), wy + ny*(insR*0.72));
-    ctx.lineTo(wx - nx*(insR*0.72), wy - ny*(insR*0.72));
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // ── Bolted flanges at both ends ──
-  [[x1,y1],[x2,y2]].forEach(([cx,cy]) => {
-    const fR = insR * 1.35;   // flange face outer radius
-    const fW = insR * 0.55;   // flange axial thickness
-
-    // Flange shadow
-    ctx.save(); ctx.filter = 'blur(2px)';
-    ctx.beginPath();
-    ctx.moveTo(cx + ux*fW + nx*fR, cy + uy*fW + ny*fR);
-    ctx.lineTo(cx - ux*fW + nx*fR, cy - uy*fW + ny*fR);
-    ctx.lineTo(cx - ux*fW - nx*fR, cy - uy*fW - ny*fR);
-    ctx.lineTo(cx + ux*fW - nx*fR, cy + uy*fW - ny*fR);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'; ctx.fill();
-    ctx.restore();
-
-    // Flange body
-    ctx.beginPath();
-    ctx.moveTo(cx + ux*fW + nx*fR, cy + uy*fW + ny*fR);
-    ctx.lineTo(cx - ux*fW + nx*fR, cy - uy*fW + ny*fR);
-    ctx.lineTo(cx - ux*fW - nx*fR, cy - uy*fW - ny*fR);
-    ctx.lineTo(cx + ux*fW - nx*fR, cy + uy*fW - ny*fR);
-    ctx.closePath();
-    const fg = ctx.createLinearGradient(cx+nx*fR,cy+ny*fR, cx-nx*fR,cy-ny*fR);
-    fg.addColorStop(0,   '#060a0e');
-    fg.addColorStop(0.15,'#1a2e42');
-    fg.addColorStop(0.42,'#2e4e6e');
-    fg.addColorStop(0.58,'#233d5a');
-    fg.addColorStop(0.82,'#16263a');
-    fg.addColorStop(1,   '#040810');
-    ctx.fillStyle = fg; ctx.fill();
-
-    // Flange face edges
-    ctx.strokeStyle = 'rgba(80,130,180,0.55)'; ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(cx+ux*fW+nx*fR, cy+uy*fW+ny*fR);
-    ctx.lineTo(cx+ux*fW-nx*fR, cy+uy*fW-ny*fR); ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(cx-ux*fW+nx*fR, cy-uy*fW+ny*fR);
-    ctx.lineTo(cx-ux*fW-nx*fR, cy-uy*fW-ny*fR); ctx.stroke();
-
-    // Bolt holes (6 bolts around flange)
-    const boltCount = 6;
-    const boltR = fR * 0.80;
-    const boltDotR = insR * 0.10;
-    for (let b = 0; b < boltCount; b++) {
-      const ang = (b / boltCount) * Math.PI; // half circle facing up/normal direction
-      // Map angle to perpendicular + axial offset
-      const bx = cx + nx*(boltR * Math.cos(ang * 1 - Math.PI/2))
-                     + ux*(fW * 0.2 * (b % 2 === 0 ? 1 : -1));
-      const by = cy + ny*(boltR * Math.cos(ang * 1 - Math.PI/2))
-                     + uy*(fW * 0.2 * (b % 2 === 0 ? 1 : -1));
-      // Bolt dot
-      const bg = ctx.createRadialGradient(bx - boltDotR*0.3, by - boltDotR*0.3, 0, bx, by, boltDotR);
-      bg.addColorStop(0, '#3a5a7a'); bg.addColorStop(0.6, '#1a2e42'); bg.addColorStop(1, '#080e14');
-      ctx.beginPath(); ctx.arc(bx, by, boltDotR, 0, Math.PI*2);
-      ctx.fillStyle = bg; ctx.fill();
-      ctx.beginPath(); ctx.arc(bx, by, boltDotR, 0, Math.PI*2);
-      ctx.strokeStyle = 'rgba(80,130,180,0.4)'; ctx.lineWidth = 0.7; ctx.stroke();
-    }
-
-    // Flange highlight rim
-    ctx.beginPath();
-    ctx.moveTo(cx+ux*fW+nx*fR, cy+uy*fW+ny*fR);
-    ctx.lineTo(cx-ux*fW+nx*fR, cy-uy*fW+ny*fR);
-    ctx.strokeStyle = 'rgba(130,190,240,0.25)'; ctx.lineWidth = 1.2; ctx.stroke();
-  });
 }
 
+// ─── TOP-DOWN METALLIC PIPE ─────────────────────────────────
+function drawPipeSegment(ctx, x1, y1, x2, y2, leaking, highP, W) {
+  const dx = x2 - x1, dy = y2 - y1;
+  const len = Math.hypot(dx, dy); if (len < 1) return;
+  const ux = dx / len, uy = dy / len;     // along pipe
+  const nx = -uy, ny = ux;                 // perpendicular
+  const t = Math.max(6, W * 0.0125);       // half thickness
+  const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+
+  ctx.save();
+  ctx.lineCap = 'round';
+
+  // Drop shadow
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = t * 2 + 5;
+  ctx.beginPath(); ctx.moveTo(x1 + 2, y1 + 3); ctx.lineTo(x2 + 2, y2 + 3); ctx.stroke();
+
+  // Dark casing outline
+  ctx.strokeStyle = '#0a1018';
+  ctx.lineWidth = t * 2 + 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+
+  // Metallic body — cross-section gradient
+  const g = ctx.createLinearGradient(mx - nx * t, my - ny * t, mx + nx * t, my + ny * t);
+  if (leaking) {
+    g.addColorStop(0,'#3a0c0c'); g.addColorStop(0.4,'#a83232');
+    g.addColorStop(0.5,'#f06464'); g.addColorStop(0.6,'#a83232'); g.addColorStop(1,'#2c0808');
+  } else if (highP) {
+    g.addColorStop(0,'#5a3a08'); g.addColorStop(0.4,'#c98a22');
+    g.addColorStop(0.5,'#f5c060'); g.addColorStop(0.6,'#c98a22'); g.addColorStop(1,'#3a2606');
+  } else {
+    g.addColorStop(0,'#222a36'); g.addColorStop(0.32,'#5d6877');
+    g.addColorStop(0.5,'#aab6c6'); g.addColorStop(0.68,'#5d6877'); g.addColorStop(1,'#1b222c');
+  }
+  ctx.strokeStyle = g;
+  ctx.lineWidth = t * 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+
+  // Specular highlight stripe
+  ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+  ctx.lineWidth = Math.max(1, t * 0.24);
+  ctx.beginPath();
+  ctx.moveTo(x1 - nx * t * 0.42, y1 - ny * t * 0.42);
+  ctx.lineTo(x2 - nx * t * 0.42, y2 - ny * t * 0.42);
+  ctx.stroke();
+
+  // Leak glow
+  if (leaking) {
+    ctx.shadowColor = '#ef4444';
+    ctx.shadowBlur = 18;
+    ctx.strokeStyle = 'rgba(239,68,68,0.45)';
+    ctx.lineWidth = t * 2;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+// Metallic junction disc drawn at each node where pipes meet
+function drawJunction(ctx, x, y, W) {
+  const r = Math.max(7, W * 0.014) + 1.5;
+  ctx.save();
+  ctx.beginPath(); ctx.arc(x, y, r + 1.5, 0, Math.PI*2);
+  ctx.fillStyle = '#0a1018'; ctx.fill();
+  const g = ctx.createRadialGradient(x - r*0.35, y - r*0.4, r*0.1, x, y, r);
+  g.addColorStop(0, '#b6c2d2'); g.addColorStop(0.55, '#5d6877'); g.addColorStop(1, '#222a36');
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y, r*0.4, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(20,28,38,0.7)'; ctx.fill();
+  ctx.restore();
+}
 // ─── SENSOR LED / BADGE ─────────────────────────────────────
 const SENSOR_COLORS = { pressure:'#3b9eff', acoustic:'#22c55e', flow:'#f59e0b' };
 const SENSOR_STATUS_COLORS = { normal:null, highpressure:'#f59e0b', leak:'#ef4444', offline:'#475569' };
@@ -760,65 +322,58 @@ function sensorColor(s) {
 
 function drawSensor(ctx, s, x, y, W) {
   const col = sensorColor(s);
-  const r   = W * (s.featured ? 0.024 : 0.017);
+  const r   = W * (s.featured ? 0.020 : 0.016);
 
   // Leak: expanding pulse rings
   if(s.status==='leak'){
     for(let i=0;i<3;i++){
       const phase=((Date.now()/800)+i*0.33)%1;
       ctx.beginPath(); ctx.arc(x,y,r+phase*r*3.5,0,Math.PI*2);
-      ctx.strokeStyle=`rgba(239,68,68,${(1-phase)*0.75})`; ctx.lineWidth=2; ctx.stroke();
+      ctx.strokeStyle=`rgba(239,68,68,${(1-phase)*0.7})`; ctx.lineWidth=2; ctx.stroke();
     }
-    // Red hot ground glow
-    const glow=ctx.createRadialGradient(x,y+r*2,0,x,y+r*2,r*5);
-    glow.addColorStop(0,`rgba(239,68,68,${0.25+Math.sin(Date.now()/200)*0.12})`);
-    glow.addColorStop(1,'transparent');
-    ctx.beginPath(); ctx.arc(x,y+r*2,r*5,0,Math.PI*2); ctx.fillStyle=glow; ctx.fill();
   }
-
-  // High pressure pulse
   if(s.status==='highpressure'){
     const ph=(Math.sin(Date.now()/350)+1)/2;
-    ctx.beginPath(); ctx.arc(x,y,r*2.4,0,Math.PI*2);
+    ctx.beginPath(); ctx.arc(x,y,r*2.2,0,Math.PI*2);
     ctx.strokeStyle=`rgba(245,158,11,${0.15+ph*0.35})`; ctx.lineWidth=1.5; ctx.stroke();
   }
 
-  // Outer glow halo
-  const gldR=ctx.createRadialGradient(x,y,0,x,y,r*3.5);
-  gldR.addColorStop(0,col+'88'); gldR.addColorStop(0.4,col+'33'); gldR.addColorStop(1,'transparent');
-  ctx.beginPath(); ctx.arc(x,y,r*3.5,0,Math.PI*2); ctx.fillStyle=gldR; ctx.fill();
+  // Soft outer glow
+  const gldR=ctx.createRadialGradient(x,y,0,x,y,r*2.6);
+  gldR.addColorStop(0,col+'66'); gldR.addColorStop(0.5,col+'22'); gldR.addColorStop(1,'transparent');
+  ctx.beginPath(); ctx.arc(x,y,r*2.6,0,Math.PI*2); ctx.fillStyle=gldR; ctx.fill();
 
-  // Dark surround ring
-  ctx.beginPath(); ctx.arc(x,y,r+3,0,Math.PI*2); ctx.fillStyle='#050a12'; ctx.fill();
+  // White pin ring
+  ctx.beginPath(); ctx.arc(x,y,r+2,0,Math.PI*2);
+  ctx.fillStyle='#f4f8ff'; ctx.fill();
 
-  // White ring (like reference image)
-  ctx.beginPath(); ctx.arc(x,y,r+1.5,0,Math.PI*2);
-  ctx.strokeStyle='rgba(200,220,255,0.6)'; ctx.lineWidth=1.5; ctx.stroke();
-
-  // LED body
+  // Colored body
   const lg=ctx.createRadialGradient(x-r*0.3,y-r*0.35,r*0.05,x,y,r);
-  lg.addColorStop(0,lightenHex(col,70)); lg.addColorStop(0.45,col); lg.addColorStop(1,darkenHex(col,55));
+  lg.addColorStop(0,lightenHex(col,55)); lg.addColorStop(0.5,col); lg.addColorStop(1,darkenHex(col,45));
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fillStyle=lg; ctx.fill();
 
-  // Inner type ring (to distinguish type visually)
-  ctx.beginPath(); ctx.arc(x,y,r*0.5,0,Math.PI*2);
-  ctx.strokeStyle='rgba(255,255,255,0.45)'; ctx.lineWidth=1.2; ctx.stroke();
-
-  // Specular
-  ctx.beginPath(); ctx.arc(x-r*0.28,y-r*0.30,r*0.26,0,Math.PI*2);
-  ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.fill();
+  // Sensor glyph: signal dot + two arcs
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.92)';
+  ctx.fillStyle='rgba(255,255,255,0.92)';
+  ctx.lineWidth=Math.max(1, r*0.13);
+  ctx.beginPath(); ctx.arc(x, y+r*0.18, r*0.16, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(x, y+r*0.18, r*0.42, Math.PI*1.18, Math.PI*1.82); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y+r*0.18, r*0.66, Math.PI*1.1, Math.PI*1.9); ctx.stroke();
+  ctx.restore();
 
   // Label
   if(s.status==='leak' || s.featured || s===tooltipSensor){
     ctx.save();
     ctx.font=`bold ${Math.max(9,W*0.011)}px Segoe UI`;
-    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=6;
-    ctx.fillStyle=s.status==='leak'?'#ff6060':'#ffffff';
+    ctx.shadowColor='rgba(0,0,0,0.95)'; ctx.shadowBlur=6;
+    ctx.fillStyle=s.status==='leak'?'#ff6060':'#dbe7ff';
     ctx.textAlign='center';
-    ctx.fillText(s.label, x, y-r-6);
+    ctx.fillText(s.label, x, y-r-7);
     ctx.restore();
   }
 }
+
 
 function lightenHex(hex,a){
   const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
@@ -829,86 +384,50 @@ function darkenHex(hex,a){
   return `rgb(${Math.max(0,r-a)},${Math.max(0,g-a)},${Math.max(0,b-a)})`;
 }
 
-// ─── LEAK EFFECT (coolant drip) ─────────────────────────────
+// ─── LEAK EFFECT (top-down coolant burst) ──────────────────
 function drawLeakEffects(ctx, W, H) {
   state.sensors.filter(s=>s.status==='leak').forEach(s=>{
     const x=s.nx*W, y=s.ny*H;
     const t=Date.now();
-
-    // Coolant drips (blue-green tint instead of water)
-    for(let d=0;d<6;d++){
-      const prog=((t/500+d*0.16)%1);
-      const dx=(Math.sin(d*1.4)*W*0.008)*(0.5+prog*0.5);
-      const dy=prog*H*0.08;
-      const alpha=Math.max(0,(1-prog*1.2)*0.9);
-      const dr=W*(0.004*(1-prog*0.6));
+    // Radial spray droplets
+    for(let d=0;d<10;d++){
+      const ang=(d/10)*Math.PI*2 + t/1400;
+      const prog=((t/600+d*0.1)%1);
+      const dist=prog*W*0.045;
+      const alpha=Math.max(0,(1-prog)*0.85);
+      const dr=W*(0.004*(1-prog*0.5));
       if(alpha>0.05){
-        ctx.beginPath(); ctx.arc(x+dx,y+dy,dr,0,Math.PI*2);
+        ctx.beginPath();
+        ctx.arc(x+Math.cos(ang)*dist, y+Math.sin(ang)*dist, dr, 0, Math.PI*2);
         ctx.fillStyle=`rgba(40,200,180,${alpha})`; ctx.fill();
-        // Teardrop tail
-        if(prog>0.1){
-          ctx.beginPath(); ctx.moveTo(x+dx,y+dy-dr); ctx.lineTo(x+dx,y+dy-dr*3.5);
-          ctx.strokeStyle=`rgba(40,200,180,${alpha*0.5})`; ctx.lineWidth=dr*1.2; ctx.lineCap='round'; ctx.stroke();
-        }
       }
     }
-
-    // Coolant pool / splash
-    const rProg=((t/600)%1);
-    const pudR=W*0.012+rProg*W*0.022;
-    ctx.beginPath(); ctx.ellipse(x,y+H*0.08,pudR,pudR*0.3,0,0,Math.PI*2);
-    ctx.strokeStyle=`rgba(40,200,180,${(1-rProg)*0.55})`; ctx.lineWidth=1.5; ctx.stroke();
-
-    // Stain on concrete
-    const stainGrd=ctx.createRadialGradient(x,y+H*0.05,0,x,y+H*0.05,W*0.025);
-    stainGrd.addColorStop(0,'rgba(20,80,80,0.4)'); stainGrd.addColorStop(1,'transparent');
-    ctx.beginPath(); ctx.arc(x,y+H*0.05,W*0.025,0,Math.PI*2);
+    // Expanding ripple ring
+    const rProg=((t/700)%1);
+    ctx.beginPath(); ctx.arc(x,y,W*0.012+rProg*W*0.04,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(40,200,180,${(1-rProg)*0.5})`; ctx.lineWidth=2; ctx.stroke();
+    // Coolant stain
+    const stainGrd=ctx.createRadialGradient(x,y,0,x,y,W*0.04);
+    stainGrd.addColorStop(0,'rgba(30,120,110,0.35)'); stainGrd.addColorStop(1,'transparent');
+    ctx.beginPath(); ctx.arc(x,y,W*0.04,0,Math.PI*2);
     ctx.fillStyle=stainGrd; ctx.fill();
   });
 }
 
 // ─── OVERLAY LABELS ──────────────────────────────────────────
 function drawOverlayLabels(ctx, W, H) {
-  const GY=GROUND_Y*H;
-
-  // Section label
   ctx.save();
-  ctx.font=`bold ${Math.max(10,W*0.012)}px Segoe UI, monospace`;
-  ctx.fillStyle='rgba(140,190,230,0.85)';
+  ctx.font=`700 ${Math.max(11,W*0.014)}px Segoe UI, sans-serif`;
+  ctx.fillStyle='rgba(180,210,245,0.92)';
   ctx.textAlign='left';
-  ctx.shadowColor='rgba(0,0,0,0.95)'; ctx.shadowBlur=5;
-  ctx.fillText('UNDERGROUND PIPE CROSS-SECTION', W*0.01, GY+H*0.058);
+  ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=5;
+  ctx.fillText('PIPE NETWORK MAP', W*0.025, H*0.072);
+  ctx.font=`${Math.max(8,W*0.0095)}px Segoe UI`;
+  ctx.fillStyle='rgba(110,150,195,0.6)';
+  ctx.fillText('Top-down facility view · live sensor telemetry', W*0.025, H*0.072 + Math.max(13,W*0.016));
   ctx.restore();
-
-  // Ground / underground divider annotation
-  ctx.save();
-  ctx.font=`${Math.max(8,W*0.009)}px Segoe UI`;
-  ctx.fillStyle='rgba(90,140,180,0.55)';
-  ctx.textAlign='right';
-  ctx.fillText('▲ SURFACE  /  SUBGRADE ▼', W*0.985, GY + H*0.040);
-  ctx.restore();
-
-  // Municipal supply in arrow (left)
-  drawArrowLabel(ctx,'MUNICIPAL\nSUPPLY IN', W*0.005, GY+H*0.18, 'right', W);
-  // Discharge out arrow (right)
-  drawArrowLabel(ctx,'DISCHARGE\nOUT', W*0.995, GY+H*0.18, 'left', W);
-
-  // Fire suppression label
-  const fireSensor = state.sensors[13]; // S14
-  if(fireSensor){
-    const ix=fireSensor.nx*W, iy=fireSensor.ny*H;
-    ctx.save();
-    ctx.strokeStyle='rgba(200,60,60,0.55)'; ctx.lineWidth=1; ctx.setLineDash([4,4]);
-    ctx.beginPath(); ctx.rect(ix-W*0.065, iy-H*0.015, W*0.13, H*0.05);
-    ctx.stroke(); ctx.setLineDash([]);
-    ctx.font=`${Math.max(8,W*0.009)}px Segoe UI`;
-    ctx.fillStyle='rgba(255,160,160,0.80)'; ctx.textAlign='center';
-    ctx.shadowColor='rgba(0,0,0,0.9)'; ctx.shadowBlur=4;
-    ctx.fillText('FIRE SUPPRESSION', ix, iy+H*0.06);
-    ctx.fillText('(FM200)', ix, iy+H*0.075);
-    ctx.restore();
-  }
 }
+
 
 function drawArrowLabel(ctx, text, x, y, dir, W) {
   ctx.save();
@@ -983,39 +502,38 @@ function drawLeakBubbles(ctx, W, H) {
 
 // ─── SENSOR TYPE LEGEND ──────────────────────────────────────
 function drawLegendPanel(ctx, W, H) {
-  const GY=GROUND_Y*H;
-  const lx=W*0.01, ly=GY-H*0.44;
-  const lW=W*0.14, lH=H*0.27;
-  const pad=H*0.025;
+  const items=[
+    {col:'#22c55e', label:'Normal'},
+    {col:'#3b9eff', label:'Monitoring'},
+    {col:'#f59e0b', label:'High Pressure'},
+    {col:'#ef4444', label:'Leak Detected'},
+  ];
+  const pad=H*0.026;
+  const lW=W*0.145, lH=pad*1.6 + items.length*pad*1.4 + pad*0.4;
+  const lx=W*0.985-lW, ly=H*0.985-lH;
 
   ctx.save();
-  ctx.fillStyle='rgba(5,12,25,0.82)';
-  ctx.strokeStyle='rgba(40,80,130,0.5)'; ctx.lineWidth=1;
+  ctx.fillStyle='rgba(8,14,26,0.85)';
+  ctx.strokeStyle='rgba(50,90,140,0.45)'; ctx.lineWidth=1;
   ctx.beginPath(); ctx.roundRect(lx,ly,lW,lH,8); ctx.fill(); ctx.stroke();
 
   ctx.font=`bold ${Math.max(8,W*0.009)}px Segoe UI`;
   ctx.fillStyle='rgba(200,220,255,0.9)'; ctx.textAlign='left';
-  ctx.fillText('SENSOR TYPES', lx+pad, ly+pad*1.6);
+  ctx.fillText('STATUS', lx+pad, ly+pad*1.3);
 
-  const types=[
-    {col:'#3b9eff', label:'Pressure Sensor'},
-    {col:'#22c55e', label:'Acoustic Sensor'},
-    {col:'#f59e0b', label:'Flow Sensor'},
-  ];
-  types.forEach((t,i)=>{
-    const ty=ly+pad*2.8+i*pad*1.6;
-    // Mini LED
-    const lg=ctx.createRadialGradient(lx+pad+6,ty,0,lx+pad+6,ty,6);
-    lg.addColorStop(0,lightenHex(t.col,60)); lg.addColorStop(1,t.col);
-    ctx.beginPath(); ctx.arc(lx+pad+6,ty,5.5,0,Math.PI*2); ctx.fillStyle=lg; ctx.fill();
-    ctx.beginPath(); ctx.arc(lx+pad+6,ty,5.5,0,Math.PI*2);
-    ctx.strokeStyle='rgba(255,255,255,0.4)'; ctx.lineWidth=1; ctx.stroke();
-    ctx.font=`${Math.max(7,W*0.008)}px Segoe UI`;
-    ctx.fillStyle='rgba(180,210,255,0.85)';
+  items.forEach((t,i)=>{
+    const ty=ly+pad*2.4+i*pad*1.4;
+    ctx.beginPath(); ctx.arc(lx+pad+5,ty,5,0,Math.PI*2);
+    ctx.fillStyle=t.col; ctx.fill();
+    ctx.beginPath(); ctx.arc(lx+pad+5,ty,5,0,Math.PI*2);
+    ctx.strokeStyle='rgba(255,255,255,0.5)'; ctx.lineWidth=1; ctx.stroke();
+    ctx.font=`${Math.max(7,W*0.0085)}px Segoe UI`;
+    ctx.fillStyle='rgba(190,215,255,0.85)';
     ctx.fillText(t.label, lx+pad+15, ty+4);
   });
   ctx.restore();
 }
+
 
 // ─── MAIN DRAW ───────────────────────────────────────────────
 function drawPipe() {
@@ -1041,8 +559,12 @@ function drawPipe() {
     drawPipeSegment(ctx,a.nx*W,a.ny*H,b.nx*W,b.ny*H,leaking,highP,W);
   });
 
+  // 2b. Metallic junction discs at every node
+  state.sensors.forEach(s=> drawJunction(ctx, s.nx*W, s.ny*H, W));
+
   // 3. Leak water effects
   drawLeakEffects(ctx,W,H);
+
 
   // 4. Sensors on top of pipes
   [...state.sensors].sort((a,b)=>a.ny-b.ny).forEach(s=>{
@@ -1303,7 +825,34 @@ function downloadReport(){
   const blob=new Blob([lines.join('\n')],{type:'text/plain'});const url=URL.createObjectURL(blob);const a2=document.createElement('a');a2.href=url;a2.download='aquadrop_report.txt';a2.click();URL.revokeObjectURL(url);
 }
 
+function downloadInsuranceReport(){
+  const leakAlerts=state.alerts.filter(a=>a.type==='leak');
+  const lines=[
+    'AquaDrop Insurance Leak History Report',
+    '======================================',
+    `Generated: ${new Date().toLocaleString()}`,
+    `Monitoring Started: ${new Date(state.startTime).toLocaleString()}`,
+    `Total Scans: ${state.totalScans}`,
+    `Total Leaks Detected: ${state.leaksFound}`,
+    `Active Leaks: ${state.sensors.filter(s=>s.status==='leak').length}`,
+    '',
+    'Date/Time | Sensor | Location | Pipe Section | Pressure (PSI) | Confidence',
+    '---------------------------------------------------------------------------',
+  ];
+  if(leakAlerts.length===0){
+    lines.push('No leak events recorded yet. System monitoring continuously.');
+  } else {
+    leakAlerts.forEach(a=>{
+      const s=a.sensor;
+      lines.push(`${a.time} | ${s?s.id:'—'} | ${s?s.location||s.pipe:'—'} | ${s?s.pipe:'—'} | ${s?s.psi.toFixed(1):'—'} | ${s?(s.leakProb*100).toFixed(0)+'%':'—'}`);
+    });
+  }
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});const url=URL.createObjectURL(blob);const a2=document.createElement('a');a2.href=url;a2.download='aquadrop_insurance_report.txt';a2.click();URL.revokeObjectURL(url);
+}
+
 function waveLoop(){drawWave();requestAnimationFrame(waveLoop);}
+
+
 
 window.addEventListener('DOMContentLoaded',()=>{
   initSensors();initPressureData();

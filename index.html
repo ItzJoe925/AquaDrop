@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -353,13 +354,13 @@
       <h2>Simulation Settings</h2>
       <label class="setting-row">
         Scan Interval (seconds)
-        <input type="range" min="3" max="20" value="10" id="scanInterval" oninput="updateScanInterval(this.value)" />
-        <span id="scanIntervalVal">10s</span>
+        <input type="range" min="3" max="20" value="20" id="scanInterval" oninput="updateScanInterval(this.value)" />
+        <span id="scanIntervalVal">20s</span>
       </label>
       <label class="setting-row">
         Leak Chance (1 in N per sensor per scan)
-        <input type="range" min="5" max="50" value="25" id="leakChance" oninput="updateLeakChance(this.value)" />
-        <span id="leakChanceVal">1 in 25</span>
+        <input type="range" min="5" max="50" value="50" id="leakChance" oninput="updateLeakChance(this.value)" />
+        <span id="leakChanceVal">1 in 50</span>
       </label>
       <label class="setting-row">
         Alert Sound
